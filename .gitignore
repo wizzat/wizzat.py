@@ -4,6 +4,8 @@
 *.so
 
 # Packages
+*.prof
+*.pyc
 *.egg
 *.egg-info
 dist
@@ -33,3 +35,8 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Editors
+*.swp
+*.swo
+tags
