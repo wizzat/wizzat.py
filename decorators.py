@@ -3,10 +3,25 @@ import functools, time, traceback, logging, texttable, sys, threading
 __all__ = [
     'MemoizeResults',
     'memoize',
+    'coroutine',
 ]
 
+def coroutine(func):
+    """
+    Coroutine generator
+    Original source: http://wiki.python.org/moin/Concurrency/99Bottles
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        gen = func(*args, **kwargs)
+        gen.next() # advance to the first yield
+        return gen
+    return wrapper
 
 class MemoizeResults(object):
+    """
+    Shared state memoize() result container.
+    """
     class MemoStat(object):
         calls     = 0
         miss      = 0
@@ -18,12 +33,17 @@ class MemoizeResults(object):
     stats  = {}
 
     @classmethod
-    def clear(cls):
+    def clear(cls, stats = False):
+        """
+            Clear all memoize() caches.  Optionally clear stats as well (default False)
+            Most useful with unit testing teardowns.
+        """
         for cache in cls.caches.values():
             cache.clear()
 
-        for stat in cls.stats.values():
-            stat.clear()
+        if stats:
+            for stat in cls.stats.values():
+                stat.clear()
 
     @classmethod
     def format_stats(cls):
