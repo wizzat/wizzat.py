@@ -3,6 +3,8 @@ import functools, time, traceback, logging, texttable, sys, threading
 __all__ = [
     'MemoizeResults',
     'memoize',
+    'benchmark',
+    'BenchResults',
     'coroutine',
 ]
 
@@ -47,8 +49,6 @@ class MemoizeResults(object):
 
     @classmethod
     def format_stats(cls):
-        print 'Memoize Stats By Function'
-
         table = texttable.Texttable(0)
         table.header([
             'Function Name',
@@ -75,7 +75,7 @@ class MemoizeResults(object):
                 sys.getsizeof(stats.cache),                                         # 'Cache Size',
             ])
 
-        return table.draw()
+        return "Memoize Stats By Function\n\n" + table.draw()
 
 def construct_memo_func(stats = False, until = False, kw = False, ignore_nulls = False, threads = False, verbose = False, sync = False):
     if stats:
@@ -253,6 +253,78 @@ def memoize(until = None, kw = None, ignore_nulls = None, stats = None, verbose 
             sync         = sync,
         )
     return wrap
+
+class BenchResults(object):
+    results = {}
+
+    @classmethod
+    def format_stats(cls):
+        table = texttable.Texttable(0)
+        table.header([
+            'Function',
+            'Sum Duration',
+            'Calls',
+        ])
+
+        for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+            func, cume_duration, calls = v
+            table.add_row([ k.__name__, cume_duration, calls ])
+
+        return "Benchmark Results\n\n" + table.draw()
+
+    @classmethod
+    def clear(cls):
+        for func, stats in cls.results.iteritems():
+            stats[1] = 0
+            stats[2] = 0
+
+def benchmark(obj):
+    bench_results = obj.bench_results = BenchResults.results[obj] = [ str(obj), 0, 0]
+
+    @functools.wraps(obj)
+    def benchmarker(*args, **kwargs):
+        start_time = time.time()
+
+        retval = obj(*args, **kwargs)
+
+        delta = time.time() - start_time
+
+        bench_results[1] += delta
+        bench_results[2] += 1
+
+        return retval
+
+    return benchmarker
+
+class TailRecurseException:
+    def __init__(self, args, kwargs):
+        self.args   = args
+        self.kwargs = kwargs
+
+def tail_call_optimized(obj):
+    """
+    This function decorates a function with tail call
+    optimization. It does this by throwing an exception
+    if it is it's own grandparent, and catching such
+    exceptions to fake the tail call optimization.
+
+    This function fails if the decorated
+    function recurses in a non-tail context.
+    """
+    @functools.wraps(obj)
+    def func(*args, **kwargs):
+        f = sys._getframe()
+        if f.f_back and f.f_back.f_back and f.f_back.f_back.f_code == f.f_code:
+            raise TailRecurseException(args, kwargs)
+        else:
+            while 1:
+                try:
+                    return obj(*args, **kwargs)
+                except TailRecurseException, e:
+                    args   = e.args
+                    kwargs = e.kwargs
+
+    return func
 
 if __name__ == '__main__':
     @memoize(ignore_nulls = 1, stats = 1, threads = 1, sync=1)
