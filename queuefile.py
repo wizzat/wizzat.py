@@ -1,4 +1,4 @@
-import Queue, gzip, time, threading, os, fcntl, shutil, ujson as json
+import Queue, gzip, time, threading, os, fcntl, shutil, json
 
 __all__ = [
     'mkdirp',
