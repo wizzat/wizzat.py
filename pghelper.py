@@ -107,7 +107,13 @@ def vacuum(conn, table_name):
     raise NotImplemented()
 
 def currval(conn, sequence):
-    raise NotImplemented()
+    """
+    Obtains the current value of a sequence
+    """
+    return fetch_result_rows(conn, "select currval(%(sequence)s)", sequence = sequence)[0][0]
 
 def nextval(conn, sequence):
-    raise NotImplemented()
+    """
+    Obtains the next value of a sequence
+    """
+    return fetch_result_rows(conn, "select nextval(%(sequence)s)", sequence = sequence)[0][0]

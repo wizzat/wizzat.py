@@ -79,5 +79,31 @@ class PgHelperTest(unittest.TestCase):
             conn.commit()
             self.assertEqual(pghelper.table_exists(conn, "foobar"), True);
 
+    def test_sequences(self):
+        with psycopg2.connect(**self.connection_info) as conn:
+            conn.autocommit = False
+            try:
+                pghelper.execute(conn, "drop sequence test_sequence") # if exists isn't supported
+            except psycopg2.ProgrammingError:
+                conn.rollback()
+
+            pghelper.execute(conn, "create sequence test_sequence")
+
+            self.assertEqual(pghelper.nextval(conn, 'test_sequence'), 1)
+            self.assertEqual(pghelper.nextval(conn, 'test_sequence'), 2)
+            self.assertEqual(pghelper.nextval(conn, 'test_sequence'), 3)
+            self.assertEqual(pghelper.currval(conn, 'test_sequence'), 3)
+
+    def test_currval_limitation(self):
+        with psycopg2.connect(**self.connection_info) as conn:
+            conn.autocommit = False
+            try:
+                pghelper.execute(conn, "drop sequence test_sequence") # if exists isn't supported
+            except psycopg2.ProgrammingError:
+                conn.rollback()
+
+            pghelper.execute(conn, "create sequence test_sequence")
+            self.assertRaises(psycopg2.OperationalError, lambda: pghelper.currval(conn, 'test_sequence'))
+
 if __name__ == '__main__':
     unittest.main()
