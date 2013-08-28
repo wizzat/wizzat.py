@@ -18,3 +18,13 @@ util:
 - import_class: import a class by name and return a reference.  Yes, this is potentially dangerous.
 - merge_dicts: merge dictionaries.  Successive values of the same key are overwritten
 - swallow: Swallow an exception.  Mostly used to replace try/except/pass blocks.
+
+pghelper:
+- execute: Executes a SQL command against a particular psycopg2 connection.  Iteration over the result set is supported.
+- fetch\_result\_rows: Executes a SQL command and reads the entire result set into memory immediately.
+- set\_sql\_log\_func: Calls the supplied function with raw SQL for every SQL query executed.
+- relation\_info: Obtains the relation info for the named relname/relkind for the current database
+- table\_exists: Convenience alias for relation\_info(table\_name, 'r')
+- view\_exists: Convenience alias for relation\_info(view\_name, 'v')
+- nextval: Obtains the next value for the named sequence
+- currval: Obtains the current value for the named sequence
