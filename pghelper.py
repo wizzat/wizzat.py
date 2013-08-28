@@ -117,3 +117,25 @@ def nextval(conn, sequence):
     Obtains the next value of a sequence
     """
     return fetch_result_rows(conn, "select nextval(%(sequence)s)", sequence = sequence)[0][0]
+
+def sql_where_from_params(**kwargs):
+    """
+    Utility function for converting a param dictionary into a where clause
+    Lists and tuples become in clauses
+    """
+    clauses = [ 'true' ]
+    for key, value in kwargs.iteritems():
+        if isinstance(value, list) or isinstance(value, tuple):
+            if not value:
+                clauses = [ 'true = false' ]
+                break
+
+        clauses.append({
+            None  : "{0} is null".format(key),
+            list  : "{0} in (%({0})s)".format(key),
+            tuple : "{0} in (%({0})s)".format(key),
+        }.get(type(value), "{0} = %({0})s".format(key)))
+
+    return ' and '.join(clauses)
+
+

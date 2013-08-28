@@ -105,5 +105,22 @@ class PgHelperTest(unittest.TestCase):
             pghelper.execute(conn, "create sequence test_sequence")
             self.assertRaises(psycopg2.OperationalError, lambda: pghelper.currval(conn, 'test_sequence'))
 
+    def test_where_clause(self):
+        clause = pghelper.sql_where_from_params(
+            foo = True,
+            bar = [ 1,2,3 ],
+        )
+
+        self.assertEqual(clause, 'true and foo = %(foo)s and bar in (%(bar)s)')
+
+    def test_where_clause__empty_list(self):
+        clause = pghelper.sql_where_from_params(
+            foo = True,
+            bar = [ ],
+        )
+
+        self.assertEqual(clause, 'true = false')
+
+
 if __name__ == '__main__':
     unittest.main()
