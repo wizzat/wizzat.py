@@ -20,8 +20,9 @@ util:
 - swallow: Swallow an exception.  Mostly used to replace try/except/pass blocks.
 
 pghelper:
-- execute: Executes a SQL command against a particular psycopg2 connection.  Iteration over the result set is supported.
-- fetch\_result\_rows: Executes a SQL command and reads the entire result set into memory immediately.
+- execute: Executes a SQL command against a particular psycopg2 connection.  Iteration over the result set is not supported.
+- fetch\_result\_rows: Executes a SQL command and reads the entire result set into memory immediately.  Trades memory for the ability to immediately execute another query.
+- iter\_result\_rows: Executes a SQL command for iteration.  Ideal for keeping the memory footprint low.
 - set\_sql\_log\_func: Calls the supplied function with raw SQL for every SQL query executed.
 - relation\_info: Obtains the relation info for the named relname/relkind for the current database
 - table\_exists: Convenience alias for relation\_info(table\_name, 'r')
