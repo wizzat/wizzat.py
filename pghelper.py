@@ -64,13 +64,13 @@ def copy_from(conn, fp, table_name, columns = None):
 
 def relation_info(conn, relname, relkind = 'r'):
     """
-    Fetch table information from the pg catalog
+    Fetch object information from the pg catalog
     """
     results = fetch_result_rows(conn, """
         SELECT *
-        from pg_class
-        where relname = %(relname)s
-            and relkind = %(relkind)s
+        FROM pg_class
+        WHERE relname = %(relname)s
+            AND relkind = %(relkind)s
     """,
         relname = relname,
         relkind = relkind,
