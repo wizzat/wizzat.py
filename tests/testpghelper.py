@@ -17,13 +17,15 @@ class PgHelperTest(unittest.TestCase):
 
     def test_execute(self):
         with psycopg2.connect(**self.connection_info) as conn:
-            results = [ x for x in pghelper.execute(conn, "SELECT 1 AS foobar") ]
+            conn.autocommit = False
+            results = [ x for x in pghelper.iter_result_rows(conn, "SELECT 1 AS foobar") ]
             self.assertEqual(results[0]['foobar'], 1)
             self.assertEqual(results[0][0], 1)
 
     def test_iteration(self):
         with psycopg2.connect(**self.connection_info) as conn:
-            result = pghelper.execute(conn, """
+            conn.autocommit = 0
+            result = pghelper.iter_result_rows(conn, """
                 SELECT 1 AS foobar
                 UNION ALL
                 SELECT 2 AS foobar
@@ -40,6 +42,7 @@ class PgHelperTest(unittest.TestCase):
 
     def test_fetch_result_rows(self):
         with psycopg2.connect(**self.connection_info) as conn:
+            conn.autocommit = False
             result1 = pghelper.fetch_result_rows(conn, """
                 SELECT 1 AS foobar
                 UNION ALL
@@ -66,11 +69,13 @@ class PgHelperTest(unittest.TestCase):
 
     def test_table_exists(self):
         with psycopg2.connect(**self.connection_info) as conn:
-            pghelper.execute(conn, "drop table if exists foobar")
+            conn.autocommit = False
+            pghelper.execute(conn, "DROP TABLE IF EXISTS foobar")
             self.assertEqual(pghelper.table_exists(conn, "foobar"), False);
             conn.commit()
 
-            pghelper.execute(conn, "create table foobar (a integer)")
+
+            cur = pghelper.execute(conn, "CREATE TABLE foobar (a INTEGER UNIQUE)")
             conn.commit()
             self.assertEqual(pghelper.table_exists(conn, "foobar"), True);
 

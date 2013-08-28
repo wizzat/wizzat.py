@@ -3,6 +3,7 @@ import psycopg2.extras
 
 __all__ = [
     'execute',
+    'iter_result_rows',
     'fetch_result_rows',
     'set_sql_log_func',
     'relation_info',
@@ -41,12 +42,26 @@ def execute(conn, sql, **bind_params):
 
         cur.execute(sql, bind_params)
 
-        for result in cur:
-            yield result
+def iter_result_rows(conn, sql, **bind_params):
+    """
+    Delays fetching the SQL results into memory until iteration
+    Keeps memory footprint low
+    """
+    global _log_func
+    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+        bound_sql = cur.mogrify(sql, bind_params)
+
+        if _log_func:
+            _log_func(bound_sql)
+
+        cur.execute(sql, bind_params)
+        for row in cur:
+            yield row
 
 def fetch_result_rows(conn, sql, **bind_params):
     """
     Immediatly fetches the SQL results into memory
+    Trades memory for the ability to immediately execute another query
     """
     global _log_func
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
@@ -66,7 +81,7 @@ def relation_info(conn, relname, relkind = 'r'):
     """
     Fetch object information from the pg catalog
     """
-    results = fetch_result_rows(conn, """
+    return fetch_result_rows(conn, """
         SELECT *
         FROM pg_class
         WHERE relname = %(relname)s
@@ -75,10 +90,6 @@ def relation_info(conn, relname, relkind = 'r'):
         relname = relname,
         relkind = relkind,
     )
-
-    print results
-
-    return results
 
 def table_exists(conn, table_name):
     """
