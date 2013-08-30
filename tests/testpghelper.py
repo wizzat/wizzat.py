@@ -18,14 +18,14 @@ class PgHelperTest(unittest.TestCase):
     def test_execute(self):
         with psycopg2.connect(**self.connection_info) as conn:
             conn.autocommit = False
-            results = [ x for x in pghelper.iter_result_rows(conn, "SELECT 1 AS foobar") ]
+            results = [ x for x in pghelper.iter_results(conn, "SELECT 1 AS foobar") ]
             self.assertEqual(results[0]['foobar'], 1)
             self.assertEqual(results[0][0], 1)
 
     def test_iteration(self):
         with psycopg2.connect(**self.connection_info) as conn:
             conn.autocommit = 0
-            result = pghelper.iter_result_rows(conn, """
+            result = pghelper.iter_results(conn, """
                 SELECT 1 AS foobar
                 UNION ALL
                 SELECT 2 AS foobar
@@ -40,10 +40,10 @@ class PgHelperTest(unittest.TestCase):
             self.assertEqual(result.next()["foobar"], 3)
             self.assertEqual(result.next()["foobar"], 4)
 
-    def test_fetch_result_rows(self):
+    def test_fetch_results(self):
         with psycopg2.connect(**self.connection_info) as conn:
             conn.autocommit = False
-            result1 = pghelper.fetch_result_rows(conn, """
+            result1 = pghelper.fetch_results(conn, """
                 SELECT 1 AS foobar
                 UNION ALL
                 SELECT 2 AS foobar
@@ -53,7 +53,7 @@ class PgHelperTest(unittest.TestCase):
                 SELECT 4 AS foobar
             """)
 
-            result2 = pghelper.fetch_result_rows(conn, """
+            result2 = pghelper.fetch_results(conn, """
                 SELECT 2 AS foobar
                 UNION ALL
                 SELECT 4 AS foobar

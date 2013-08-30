@@ -3,15 +3,15 @@ import psycopg2.extras
 
 __all__ = [
     'execute',
-    'iter_result_rows',
-    'fetch_result_rows',
+    'iter_results',
+    'fetch_results',
     'set_sql_log_func',
     'relation_info',
     'table_exists',
     'view_exists',
     #'vacuum',
-    #'currval',
-    #'nextval',
+    'currval',
+    'nextval',
 ]
 
 _log_func = None
@@ -42,7 +42,7 @@ def execute(conn, sql, **bind_params):
 
         cur.execute(sql, bind_params)
 
-def iter_result_rows(conn, sql, **bind_params):
+def iter_results(conn, sql, **bind_params):
     """
     Delays fetching the SQL results into memory until iteration
     Keeps memory footprint low
@@ -58,7 +58,7 @@ def iter_result_rows(conn, sql, **bind_params):
         for row in cur:
             yield row
 
-def fetch_result_rows(conn, sql, **bind_params):
+def fetch_results(conn, sql, **bind_params):
     """
     Immediatly fetches the SQL results into memory
     Trades memory for the ability to immediately execute another query
@@ -81,7 +81,7 @@ def relation_info(conn, relname, relkind = 'r'):
     """
     Fetch object information from the pg catalog
     """
-    return fetch_result_rows(conn, """
+    return fetch_results(conn, """
         SELECT *
         FROM pg_class
         WHERE relname = %(relname)s
@@ -110,13 +110,13 @@ def currval(conn, sequence):
     """
     Obtains the current value of a sequence
     """
-    return fetch_result_rows(conn, "select currval(%(sequence)s)", sequence = sequence)[0][0]
+    return fetch_results(conn, "select currval(%(sequence)s)", sequence = sequence)[0][0]
 
 def nextval(conn, sequence):
     """
     Obtains the next value of a sequence
     """
-    return fetch_result_rows(conn, "select nextval(%(sequence)s)", sequence = sequence)[0][0]
+    return fetch_results(conn, "select nextval(%(sequence)s)", sequence = sequence)[0][0]
 
 def sql_where_from_params(**kwargs):
     """
