@@ -1,4 +1,4 @@
-from .pghelper import fetch_results
+from pyutil.pghelper import fetch_results
 import unittest, difflib, texttable, functools
 
 __all__ = [

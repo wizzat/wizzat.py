@@ -4,8 +4,8 @@ import unittest, datetime
 
 class TestDateUtil(unittest.TestCase):
     def test_epoch_handling(self):
-        self.assertEqual(from_epoch(1378741939), datetime.datetime(2013, 9, 9, 8, 52, 00))
-        self.assertEqual(to_epoch(datetime.datetime(2013, 9, 9, 8, 52, 00)), 1378741939)
+        self.assertEqual(from_epoch(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
+        self.assertEqual(to_epoch(datetime.datetime(2013, 9, 9, 15, 52, 19)), 1378741939)
 
     @skip_unfinished
     def test_now_can_be_set_and_reset(self):

@@ -1,4 +1,4 @@
-import datetime, types
+import datetime, types, calendar
 
 __all__ = [
     'now',
