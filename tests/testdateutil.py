@@ -39,13 +39,15 @@ class TestDateUtil(unittest.TestCase):
         self.assertEqual(now(), datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
         self.assertEqual(to_second(now()), datetime.datetime(2013, 9, 9, 15, 52, 19, 0))
 
-    @skip_unfinished
     def test_to_minute(self):
-        pass
+        set_now(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
+        self.assertEqual(now(), datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
+        self.assertEqual(to_minute(now()), datetime.datetime(2013, 9, 9, 15, 52, 0, 0))
 
-    @skip_unfinished
     def test_to_hour(self):
-        pass
+        set_now(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
+        self.assertEqual(now(), datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
+        self.assertEqual(to_hour(now()), datetime.datetime(2013, 9, 9, 15, 0, 0, 0))
 
     @skip_unfinished
     def test_to_day(self):

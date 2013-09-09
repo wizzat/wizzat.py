@@ -79,7 +79,7 @@ def to_minute(dt):
     Truncates a datetime to minute
     """
     return dt.replace(
-        seconds     = 0,
+        second      = 0,
         microsecond = 0,
     )
 
@@ -88,8 +88,8 @@ def to_hour(dt):
     Truncates a datetime to minute
     """
     return dt.replace(
-        minutes     = 0,
-        seconds     = 0,
+        minute      = 0,
+        second      = 0,
         microsecond = 0,
     )
 
@@ -98,9 +98,9 @@ def to_day(dt):
     Truncates a datetime to day
     """
     return dt.replace(
-        hours       = 0,
-        minutes     = 0,
-        seconds     = 0,
+        hour        = 0,
+        minute      = 0,
+        second      = 0,
         microsecond = 0,
     )
 
@@ -116,9 +116,9 @@ def to_month(dt):
     """
     return dt.replace(
         day         = 1,
-        hours       = 0,
-        minutes     = 0,
-        seconds     = 0,
+        hour        = 0,
+        minute      = 0,
+        second      = 0,
         microsecond = 0,
     )
 
@@ -134,9 +134,9 @@ def to_quarter(dt):
     return dt.replace(
         month       = dt.month/3*3 + 1,
         day         = 1,
-        hours       = 0,
-        minutes     = 0,
-        seconds     = 0,
+        hour        = 0,
+        minute      = 0,
+        second      = 0,
         microsecond = 0,
     )
 
@@ -147,9 +147,9 @@ def to_year(dt):
     return dt.replace(
         month       = 1,
         day         = 1,
-        hours       = 0,
-        minutes     = 0,
-        seconds     = 0,
+        hour        = 0,
+        minute      = 0,
+        second      = 0,
         microsecond = 0,
     )
 
