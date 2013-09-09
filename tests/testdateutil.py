@@ -27,13 +27,17 @@ class TestDateUtil(unittest.TestCase):
         self.assertEqual(t1, t2)
         self.assertNotEqual(t1, t3)
 
-    @skip_unfinished
     def test_coerce_date(self):
-        pass
+        self.assertEqual(coerce_date(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
+        self.assertEqual(coerce_date(datetime.datetime(2013, 9, 9, 15, 52, 19)), datetime.datetime(2013, 9, 9, 15, 52, 19))
 
-    @skip_unfinished
+        # String formatting not accepted yet
+        #self.assertEqual(coerce_date("2013-09-09 15:52:19"), datetime.datetime(2013, 9, 9, 15, 52, 19))
+
     def test_to_second(self):
-        pass
+        set_now(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
+        self.assertEqual(now(), datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
+        self.assertEqual(to_second(now()), datetime.datetime(2013, 9, 9, 15, 52, 19, 0))
 
     @skip_unfinished
     def test_to_minute(self):
