@@ -5,6 +5,15 @@ __all__ = [
     'set_now',
     'reset_now',
     'coerce_date',
+    'from_epoch',
+    'to_epoch',
+    'to_second',
+    'to_minute',
+    'to_hour',
+    'to_week',
+    'to_month',
+    'to_quarter',
+    'to_year',
 ]
 
 _now = None
@@ -136,8 +145,8 @@ def to_year(dt):
     Truncates a datetime to year
     """
     return dt.replace(
-        month        = 1
-        day          = 1
+        month        = 1,
+        day          = 1,
         hours        = 0,
         minutes      = 0,
         seconds      = 0,

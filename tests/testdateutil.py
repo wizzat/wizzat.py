@@ -1,6 +1,6 @@
-import unittest
 from pyutil.testutil import *
 from pyutil.dateutil import *
+import unittest, datetime
 
 class TestDateUtil(unittest.TestCase):
     def test_epoch_handling(self):
