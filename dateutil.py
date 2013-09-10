@@ -46,14 +46,23 @@ def reset_now():
 
 _date_formats = []
 def clear_date_formats():
+    """
+    Removes all registered date formats
+    """
     global _date_formats
     _date_formats = []
 
 def register_date_format(str_format):
+    """
+    Registers a date format to be attempted via strptime for parse_date and coerce_date
+    """
     global _date_formats
     _date_formats.append(str_format)
 
 def parse_date(dt):
+    """
+    Iterates through all registerd date formats and returns the first that succeeds
+    """
     global _date_formats
     if isinstance(dt, datetime.datetime):
         return dt
@@ -66,8 +75,7 @@ def parse_date(dt):
 
 def coerce_date(dt):
     """
-    Coerces a value into a datetime.datetime.  Checks for epoch (second) and certain string formats
-    Currently, these formats are:
+    Coerces a value into a datetime.datetime
     """
     if isinstance(dt, datetime.datetime):
         return dt
@@ -112,7 +120,7 @@ def to_minute(dt):
 
 def to_hour(dt):
     """
-    Truncates a datetime to minute
+    Truncates a datetime to hour
     """
     return dt.replace(
         minute      = 0,

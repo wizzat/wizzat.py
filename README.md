@@ -20,10 +20,28 @@ util:
 - swallow: Swallow an exception.  Mostly used to replace try/except/pass blocks.
 
 dateutil:
-- set\_now:
-- reset\_now:
-- now:
-- coerce\_date:
+- set\_now: Sets `pyutil.now()` function to return the specified datetime
+- reset\_now: All future calls to `pyutil.now()` will return the current time as of reset\_now()
+- now: Returns the current timestamp.  Can be manipulated or frozen with `pyutil.set\_now` and `pyutil.reset\_now`, generally for testing purposes.
+- coerce\_date: Coerces a value into a datetime.datetime
+- from\_epoch: Returns the epoch in UTC from a given epoch value (in seconds)
+- parse\_date: Iterates through all registerd date formats and returns the first that succeeds
+- register\_date\_format: Registers a date format to be attempted via strptime for parse_date and coerce_date
+- clear\_date\_formats: Removes all registered date formats
+- to\_epoch: Converts a datetime into Unix epoch (in seconds)
+- to\_second: Truncates a datetime to second
+- to\_minute: Truncates a datetime to minute
+- to\_hour: Truncates a datetime to hour
+- to\_day: Truncates a datetime to day
+- to\_week: Truncates a datetime to day.  Monday is assumed to be the start of the week.
+- to\_month: Truncates a datetime to month
+- to\_year: Truncates a datetime to year
+- to\_quarter: Truncates a datetime to quarter
+        The quarters are truncated as follows:
+            Jan, Feb, Mar -> Jan 1
+            Apr, May, Jun -> Apr 1
+            Jul, Aug, Sep -> Jul 1
+            Oct, Nov, Dec -> Oct 1
 
 pghelper:
 - execute: Executes a SQL command against a particular psycopg2 connection.  Iteration over the result set is not supported.
