@@ -57,11 +57,31 @@ class TestDateUtil(unittest.TestCase):
         self.assertEqual(to_month(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Sun
         self.assertEqual(to_month(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Mon
 
-    @skip_unfinished
     def test_to_quarter(self):
-        self.assertEqual(to_month(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Sun
-        self.assertEqual(to_month(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Mon
+        self.assertEqual(to_quarter(datetime.datetime(2013, 1, 1, 0, 0, 0)),            datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 1, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 2, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 3, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 3, 30, 23, 59, 59, 99999)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
 
-    @skip_unfinished
+        self.assertEqual(to_quarter(datetime.datetime(2013, 4, 1, 0, 0, 0)),            datetime.datetime(2013, 4, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 4, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 4, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 5, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 4, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 6, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 4, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 4, 30, 23, 59, 59, 99999)), datetime.datetime(2013, 4, 1, 0, 0, 0, 0))
+
+        self.assertEqual(to_quarter(datetime.datetime(2013, 7, 1, 0, 0, 0)),            datetime.datetime(2013, 7, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 7, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 7, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 8, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 7, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 7, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 9, 30, 23, 59, 59, 99999)), datetime.datetime(2013, 7, 1, 0, 0, 0, 0))
+
+        self.assertEqual(to_quarter(datetime.datetime(2013, 10, 1, 0, 0, 0)),            datetime.datetime(2013, 10, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 10, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 10, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 11, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 10, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 12, 9, 15, 52, 19, 43435)),  datetime.datetime(2013, 10, 1, 0, 0, 0, 0))
+        self.assertEqual(to_quarter(datetime.datetime(2013, 12, 31, 23, 59, 59, 99999)), datetime.datetime(2013, 10, 1, 0, 0, 0, 0))
+
     def test_to_year(self):
-        pass
+        self.assertEqual(to_year(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0)) # Sun
+        self.assertEqual(to_year(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0)) # Mon

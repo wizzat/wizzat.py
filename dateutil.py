@@ -153,7 +153,7 @@ def to_quarter(dt):
         Oct, Nov, Dec -> Oct 1
     """
     return dt.replace(
-        month       = dt.month/3*3 + 1,
+        month       = (dt.month-1)//3*3 + 1,
         day         = 1,
         hour        = 0,
         minute      = 0,
