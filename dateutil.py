@@ -10,10 +10,13 @@ __all__ = [
     'to_second',
     'to_minute',
     'to_hour',
+    'to_day',
     'to_week',
     'to_month',
     'to_quarter',
     'to_year',
+    'register_date_format',
+    'clear_date_formats',
 ]
 
 _now = None
@@ -39,6 +42,16 @@ def reset_now():
     set_now(None)
     set_now(now())
 
+
+_date_formats = []
+def clear_date_formats():
+    global _date_formats
+    _date_formats = []
+
+def register_date_format(str_format):
+    global _date_formats
+    _date_formats.append(str_format)
+
 def coerce_date(dt):
     """
     Coerces a value into a datetime.datetime.  Checks for epoch (second) and certain string formats
@@ -50,8 +63,16 @@ def coerce_date(dt):
         return dt
     elif isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
         return from_epoch(dt)
-
-    return datetime.datetime(dt)
+    elif isinstance(dt, str) or isinstance(dt, unicode):
+        global _date_formats
+        for fmt in _date_formats:
+            try:
+                return datetime.datetime.strptime(dt, fmt)
+            except ValueError, e:
+                pass
+        raise ValueError("Unable to parse date ({}) with any format ({})".format(dt, _date_formats))
+    else:
+        return datetime.datetime(dt)
 
 def from_epoch(epoch):
     """

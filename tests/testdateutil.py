@@ -31,39 +31,36 @@ class TestDateUtil(unittest.TestCase):
         self.assertEqual(coerce_date(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
         self.assertEqual(coerce_date(datetime.datetime(2013, 9, 9, 15, 52, 19)), datetime.datetime(2013, 9, 9, 15, 52, 19))
 
-        # String formatting not accepted yet
-        #self.assertEqual(coerce_date("2013-09-09 15:52:19"), datetime.datetime(2013, 9, 9, 15, 52, 19))
+    def test_coerce_date__string_formatting(self):
+        register_date_format("%Y-%m-%d %H:%M:%S")
+        self.assertEqual(coerce_date("2013-09-09 15:52:19"), datetime.datetime(2013, 9, 9, 15, 52, 19))
 
     def test_to_second(self):
-        set_now(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
-        self.assertEqual(now(), datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
-        self.assertEqual(to_second(now()), datetime.datetime(2013, 9, 9, 15, 52, 19, 0))
+        self.assertEqual(to_second(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 15, 52, 19, 0))
+        self.assertEqual(to_second(datetime.datetime(2013, 9, 9, 15, 52, 19, 99999)), datetime.datetime(2013, 9, 9, 15, 52, 19, 0))
+        self.assertEqual(to_second(datetime.datetime(2013, 9, 9, 15, 52, 20)), datetime.datetime(2013, 9, 9, 15, 52, 20, 0))
 
     def test_to_minute(self):
-        set_now(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
-        self.assertEqual(now(), datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
-        self.assertEqual(to_minute(now()), datetime.datetime(2013, 9, 9, 15, 52, 0, 0))
+        self.assertEqual(to_minute(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 15, 52, 0, 0))
 
     def test_to_hour(self):
-        set_now(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
-        self.assertEqual(now(), datetime.datetime(2013, 9, 9, 15, 52, 19, 43435))
-        self.assertEqual(to_hour(now()), datetime.datetime(2013, 9, 9, 15, 0, 0, 0))
+        self.assertEqual(to_hour(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 15, 0, 0, 0))
 
-    @skip_unfinished
     def test_to_day(self):
-        pass
+        self.assertEqual(to_day(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 0, 0, 0, 0))
 
-    @skip_unfinished
     def test_to_week(self):
-        pass
+        self.assertEqual(to_week(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 2, 0, 0, 0, 0)) # Sun
+        self.assertEqual(to_week(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 0, 0, 0, 0)) # Mon
 
-    @skip_unfinished
     def test_to_month(self):
-        pass
+        self.assertEqual(to_month(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Sun
+        self.assertEqual(to_month(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Mon
 
     @skip_unfinished
     def test_to_quarter(self):
-        pass
+        self.assertEqual(to_month(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Sun
+        self.assertEqual(to_month(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Mon
 
     @skip_unfinished
     def test_to_year(self):
