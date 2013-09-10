@@ -42,6 +42,7 @@ I've always found date handling in Python to be more arduous than it should be, 
 - to\_month: Truncates a datetime to month
 - to\_year: Truncates a datetime to year
 - to\_quarter: Truncates a datetime to quarter
+
         The quarters are truncated as follows:
             Jan, Feb, Mar -> Jan 1
             Apr, May, Jun -> Apr 1
