@@ -44,7 +44,9 @@ class TestDateUtil(unittest.TestCase):
         self.assertEqual(to_minute(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 15, 52, 0, 0))
 
     def test_to_hour(self):
+        self.assertEqual(to_hour(datetime.datetime(2013, 9, 9, 15, 0, 0, 0)), datetime.datetime(2013, 9, 9, 15, 0, 0, 0))
         self.assertEqual(to_hour(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 15, 0, 0, 0))
+        self.assertEqual(to_hour(datetime.datetime(2013, 9, 9, 15, 59, 59, 99999)), datetime.datetime(2013, 9, 9, 15, 0, 0, 0))
 
     def test_to_day(self):
         self.assertEqual(to_day(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 0, 0, 0, 0))
@@ -54,8 +56,8 @@ class TestDateUtil(unittest.TestCase):
         self.assertEqual(to_week(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 9, 0, 0, 0, 0)) # Mon
 
     def test_to_month(self):
-        self.assertEqual(to_month(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Sun
-        self.assertEqual(to_month(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0)) # Mon
+        self.assertEqual(to_month(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0))
+        self.assertEqual(to_month(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 9, 1, 0, 0, 0, 0))
 
     def test_to_quarter(self):
         self.assertEqual(to_quarter(datetime.datetime(2013, 1, 1, 0, 0, 0)),            datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
@@ -83,5 +85,8 @@ class TestDateUtil(unittest.TestCase):
         self.assertEqual(to_quarter(datetime.datetime(2013, 12, 31, 23, 59, 59, 99999)), datetime.datetime(2013, 10, 1, 0, 0, 0, 0))
 
     def test_to_year(self):
-        self.assertEqual(to_year(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0)) # Sun
-        self.assertEqual(to_year(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0)) # Mon
+        self.assertEqual(to_year(datetime.datetime(2013, 9, 8, 15, 52, 19, 43435)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
+        self.assertEqual(to_year(datetime.datetime(2013, 9, 9, 15, 52, 19, 43435)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
+
+        self.assertEqual(to_year(datetime.datetime(2013, 12, 31, 23, 59, 59, 99999)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
+        self.assertEqual(to_year(datetime.datetime(2014, 1, 1, 0, 0, 0)), datetime.datetime(2014, 1, 1, 0, 0, 0, 0))
