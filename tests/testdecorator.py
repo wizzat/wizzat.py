@@ -125,3 +125,11 @@ class MemoizeTest(unittest.TestCase):
             func(1, 2, 3, a = 1, b = 3)
             func(1, 2, 3, a = 1, b = 2)
             func(1, 2, 3, a = 1, b = 3)
+
+    def test_memoize_results(self):
+        @memoize()
+        def func(*args, **kwargs):
+            return True
+
+        self.assertNotEqual(MemoizeResults.format_csv(), None)
+        self.assertNotEqual(MemoizeResults.format_stats(), None)

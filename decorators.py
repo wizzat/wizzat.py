@@ -1,4 +1,4 @@
-import functools, time, traceback, logging, texttable, sys, threading
+import functools, time, traceback, logging, sys, threading, StringIO
 
 __all__ = [
     'MemoizeResults',
@@ -49,6 +49,7 @@ class MemoizeResults(object):
 
     @classmethod
     def format_stats(cls):
+        import texttable
         table = texttable.Texttable(0)
         table.header([
             'Function Name',
@@ -76,6 +77,38 @@ class MemoizeResults(object):
             ])
 
         return "Memoize Stats By Function\n\n" + table.draw()
+
+    @classmethod
+    def format_csv(cls):
+        fp = StringIO.StringIO()
+        fp.write(",".join([
+            'Function Name',
+            'Calls',
+            'Hits',
+            'Misses',
+            'Nulls',
+            'Miss Time',
+            'Max Time Saved',
+            'Cache Items',
+            'Cache Size',
+        ]))
+        fp.write("\n")
+
+        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1].calls):
+            fp.write(",".join([ str(x) for x in [
+                func.__name__,                                                      # 'Function Name',
+                stats.calls,                                                        # 'Calls',
+                stats.calls - stats.miss,                                           # 'Hits',
+                stats.miss,                                                         # 'Misses',
+                stats.nulls,                                                        # 'Nulls',
+                stats.exec_time,                                                    # 'Miss Time',
+                (stats.calls - stats.miss) * (stats.exec_time / (stats.miss or 1)), # 'Max Time Saved',
+                len(stats.cache),                                                   # 'Cache Items',
+                sys.getsizeof(stats.cache),                                         # 'Cache Size',
+            ] ]))
+            fp.write("\n")
+
+        return fp.getvalue()
 
 def construct_memo_func(stats = False, until = False, kw = False, ignore_nulls = False, threads = False, verbose = False, sync = False):
     if stats:
@@ -259,6 +292,7 @@ class BenchResults(object):
 
     @classmethod
     def format_stats(cls):
+        import texttable
         table = texttable.Texttable(0)
         table.header([
             'Function',
@@ -271,6 +305,22 @@ class BenchResults(object):
             table.add_row([ k.__name__, cume_duration, calls ])
 
         return "Benchmark Results\n\n" + table.draw()
+
+    @classmethod
+    def format_csv(cls):
+        fp = StringIO.StringIO()
+
+        fp.write(", ".join([
+            'Function',
+            'Sum Duration',
+            'Calls',
+        ]))
+        fp.write("\n")
+
+        for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+            func, cume_duration, calls = v
+            fp.write(", ".join([ str(x) for x in [ k.__name__, cume_duration, calls ] ]))
+            fp.write("\n")
 
     @classmethod
     def clear(cls):
