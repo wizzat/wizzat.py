@@ -125,6 +125,3 @@ class MemoizeTest(unittest.TestCase):
             func(1, 2, 3, a = 1, b = 3)
             func(1, 2, 3, a = 1, b = 2)
             func(1, 2, 3, a = 1, b = 3)
-
-if __name__ == '__main__':
-    unittest.main()
