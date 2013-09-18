@@ -123,7 +123,7 @@ class MemoizeTest(unittest.TestCase):
 
             func(1, 2, 3, a = 1, b = 2)
             func(1, 2, 3, a = 1, b = 3)
-            func(1, 2, 3, a = 1, b = 2)
+            func(1, 2, 4, a = 1, b = 2)
             func(1, 2, 3, a = 1, b = 3)
 
     def test_memoize_results(self):

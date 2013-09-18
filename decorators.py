@@ -1,4 +1,5 @@
 import functools, time, traceback, logging, sys, threading, StringIO
+from util import swallow
 
 __all__ = [
     'MemoizeResults',
@@ -222,11 +223,9 @@ def memo_func(*args, **kwargs):
 
 def memo_func(func, Stats, Cache, stats = False, until = False, kw = False, ignore_nulls = False, verbose = False, threads = False, sync = False):
     template = construct_memo_func(stats = stats, until = until, kw = kw, ignore_nulls = ignore_nulls, verbose = verbose, threads = threads, sync = sync)
+
     def release(lock):
-        try:
-            lock.release()
-        except RuntimeError:
-            pass
+        swallow(RuntimeError, lock.release)
 
     namespace = {
         '__name__'    : 'memoize_func_{}'.format(func.__name__),
@@ -270,7 +269,7 @@ def memoize(until = None, kw = None, ignore_nulls = None, stats = None, verbose 
     @memoize(until = lambda: time.time()+3600, kw=True, sync=True)
     def func(**kwargs): pass
 
-    Modified from http://wiki.python.org/moin/PythonDecoratorLibrary
+    Inspired by http://wiki.python.org/moin/PythonDecoratorLibrary
     """
     def wrap(func):
         Cache = func.cache = MemoizeResults.caches[func] = {}
@@ -291,7 +290,7 @@ class BenchResults(object):
     results = {}
 
     @classmethod
-    def format_stats(cls):
+    def format_stats(cls, skip_no_calls = False):
         import texttable
         table = texttable.Texttable(0)
         table.header([
@@ -301,13 +300,16 @@ class BenchResults(object):
         ])
 
         for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+            if skip_no_calls and calls == 0:
+                continue
+
             func, cume_duration, calls = v
             table.add_row([ k.__name__, cume_duration, calls ])
 
         return "Benchmark Results\n\n" + table.draw()
 
     @classmethod
-    def format_csv(cls):
+    def format_csv(cls, skip_no_calls = False):
         fp = StringIO.StringIO()
 
         fp.write(", ".join([
@@ -318,6 +320,9 @@ class BenchResults(object):
         fp.write("\n")
 
         for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+            if skip_no_calls and calls == 0:
+                continue
+
             func, cume_duration, calls = v
             fp.write(", ".join([ str(x) for x in [ k.__name__, cume_duration, calls ] ]))
             fp.write("\n")

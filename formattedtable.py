@@ -47,4 +47,3 @@ def tableize_obj_list(fields, obj_list):
         table.add_row([ formatted_value(obj[field]) for field in fields ])
 
     return table.draw()
-
