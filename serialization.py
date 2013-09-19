@@ -1,7 +1,12 @@
-import collections, struct, cPickle, json
+import collections, struct, cPickle
 import bitarray, array
 from decorators import *
 from util import chunks
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 @benchmark
 def write_bitset_array(itr):
@@ -44,11 +49,9 @@ def read_bitset_naive(s):
     output_set = set()
     i = 0
     for chunk in chunks(range(len(s)//8), 250):
-        chunk_set = qstructs[len(chunk)].unpack_from(s, i)
-
-        output_set.update(chunk_set)
-
-        i += len(chunk) * 8
+        reader = qstructs[len(chunk)]
+        output_set.update(reader.unpack_from(s, i))
+        i += reader.size
 
     return output_set
 
@@ -74,10 +77,11 @@ def write_bitset(itr):
         for chunk in chunks(part_indexes, 250):
             output_list.append( istructs[len(chunk)].pack(*chunk) )
 
-    return "".join(output_list)
+    return zlib.compress("".join(output_list))
 
 @benchmark
 def read_bitset(s):
+    s = zlib.decompress(s)
     output_set = set()
 
     ptr = 0
@@ -94,8 +98,10 @@ def read_bitset(s):
         while i < num_indexes:
             n = min(num_indexes - i, 250)
             bases = istructs[n].unpack_from(s, ptr)
+            for base in bases:
+                base *= 64
+                output_set.update(base+offset for offset in bitmask_offsets)
             ptr += istructs[n].size
-            output_set.update(base*64+offset for base in bases for offset in bitmask_offsets)
             i += n
 
     return output_set
@@ -105,30 +111,30 @@ if __name__ == '__main__':
 
     class TestBitset(unittest.TestCase):
         funcs = {
-            'array' : [ write_bitset_array, read_bitset_array ],
-            'naive' : [ write_bitset_naive, read_bitset_naive ],
+            'array'  : [ write_bitset_array, read_bitset_array ],
+            'naive'  : [ write_bitset_naive, read_bitset_naive ],
             'pickle' : [ write_bitset_pickle, read_bitset_pickle ],
-            'json' : [ write_bitset_json, read_bitset_json ],
-            'ser'  : [ write_bitset, read_bitset ],
+            'json'   : [ write_bitset_json, read_bitset_json ],
+            'ser'    : [ write_bitset, read_bitset ],
         }
 
         def test_serialization(self):
-            s = { 1, 2, 3, 4 }
+            s = { 1, 2, 3, 4, 2**64-1 }
             for name, func_tpl in self.funcs.iteritems():
                 write_func, read_func = func_tpl
-                self.assertEqual(read_func(write_func(s)), s, name)
-                self.assertEqual(read_func(write_func(s)), s, name)
+                self.assertEqual(read_func(write_func(s)), s, name + str(s) + str(read_func(write_func(s))))
 
         def test_random_serialization_and_deserialization(self):
             r = [ random.randint(1, 2**35-1) for _ in xrange(20000) ]
             for _ in xrange(100):
-                s = { random.choice(r) for _ in xrange(1000) }
+                s = { random.choice(r) for _ in xrange(5000) }
                 for name, func_tpl in self.funcs.iteritems():
                     write_func, read_func = func_tpl
                     self.assertEqual(read_func(write_func(s)), s, name)
                     self.assertEqual(read_func(write_func(s)), s, name)
 
         def test_performance(self):
+            self.skipTest("abc")
             BenchResults.clear()
             r = { random.randint(1, 250000) for _ in xrange(100000) }
 
@@ -138,9 +144,9 @@ if __name__ == '__main__':
                     s = write_func(r)
                     read_func(s)
 
-                print 'raw', name, len(s)
-                print 'zlib', name, len(zlib.compress(s))
-                print
+                #print 'raw', name, len(s)
+                #print 'zlib', name, len(zlib.compress(s))
+                #print
 
             print BenchResults.format_stats()
 
@@ -323,4 +329,81 @@ if __name__ == '__main__':
 # +---------------------+--------------+-------+
 # | write_bitset_json   | 3.432        | 50    |
 # +---------------------+--------------+-------+
+
+# With zlib compress/decompress
+# Python-2.7.3                                     Pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# |      Function       | Sum Duration | Calls |   |      Function       | Sum Duration | Calls |
+# +=====================+==============+=======+   +=====================+==============+=======+
+# | read_bitset_array   | 0.432        | 50    |   | read_bitset_array   | 0.913        | 50    | -> 2x slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset_json    | 0.586        | 50    |   | read_bitset_json    | 2.356        | 50    | -> 4.5x slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset_pickle  | 0.603        | 50    |   | read_bitset_pickle  | 0.941        | 50    | -> 50% slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset_naive   | 0.789        | 50    |   | read_bitset_naive   | 1.567        | 50    | -> 2x slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset        | 2.396        | 50    |   | write_bitset        | 0.574        | 50    | -> 4x faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset_pickle | 2.589        | 50    |   | write_bitset_pickle | 3.081        | 50    | -> 20% slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset_naive  | 2.922        | 50    |   | write_bitset_naive  | 2.876        | 50    | -> Approximately equal
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset         | 2.982        | 50    |   | read_bitset         | 1.282        | 50    | -> 2.5x faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset_array  | 3.278        | 50    |   | write_bitset_array  | 2.710        | 50    | -> 30% faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset_json   | 3.493        | 50    |   | write_bitset_json   | 3.455        | 50    | -> Approximately equal
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+
+# Without zlib compress/decompress
+# Python 2.7.3                                     Pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# |      Function       | Sum Duration | Calls |   |      Function       | Sum Duration | Calls |
+# +=====================+==============+=======+   +=====================+==============+=======+
+# | write_bitset_pickle | 0.254        | 50    |   | write_bitset_pickle | 0.778        | 50    | -> 3x slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset_array   | 0.281        | 50    |   | read_bitset_array   | 0.622        | 50    | -> 2x slower with pypy-2.0.1 
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset_json   | 0.371        | 50    |   | write_bitset_json   | 0.310        | 50    | -> 20% faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset_naive  | 0.409        | 50    |   | write_bitset_naive  | 0.364        | 50    | -> 10% faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset_json    | 0.428        | 50    |   | read_bitset_json    | 2.148        | 50    | -> 5x slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset_pickle  | 0.478        | 50    |   | read_bitset_pickle  | 0.850        | 50    | -> 75% slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset_naive   | 0.590        | 50    |   | read_bitset_naive   | 1.438        | 50    | -> 3x slower with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset_array  | 0.766        | 50    |   | write_bitset_array  | 0.279        | 50    | -> 5x faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | write_bitset        | 2.358        | 50    |   | write_bitset        | 0.590        | 50    | -> 4x faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+# | read_bitset         | 3.009        | 50    |   | read_bitset         | 1.353        | 50    | -> 2x faster with pypy-2.0.1
+# +---------------------+--------------+-------+   +---------------------+--------------+-------+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
