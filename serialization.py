@@ -71,11 +71,8 @@ def write_bitset(itr):
 
     for bitmask, part_indexes in buckets.iteritems():
         output_list.append( bmstruct.pack(bitmask, len(part_indexes)) )
-        i = 0
-        while i < len(part_indexes):
-            n = min(len(part_indexes) - i, 250)
-            output_list.append( istructs[n].pack(*part_indexes[i:i+n]) )
-            i += n
+        for chunk in chunks(part_indexes, 250):
+            output_list.append( istructs[len(chunk)].pack(*chunk) )
 
     return "".join(output_list)
 
@@ -83,36 +80,24 @@ def write_bitset(itr):
 def read_bitset(s):
     output_set = set()
 
-    num_elements, = istructs[1].unpack(s[0:4])
-    ptr = 4
+    ptr = 0
+    num_elements, = istructs[1].unpack_from(s, 0)
+    ptr += istructs[1].size
 
     for _ in xrange(num_elements):
-        nptr = ptr + 12
-        bitmask, num_indexes = bmstruct.unpack(s[ptr:nptr])
-        bitmask_offsets = list(get_bits(bitmask))
-        ptr = nptr
+        bitmask, num_indexes = bmstruct.unpack_from(s, ptr)
+        ptr += bmstruct.size
+        bitmask_offsets = [ x for x in xrange(64) if bitmask & (1<<x) ]
 
         i = 0
         while i < num_indexes:
             n = min(num_indexes - i, 250)
-            nptr = ptr+n*4
-            bases = istructs[n].unpack(s[ptr:nptr])
-            for base in bases:
-                base *= 64
-                for offset in bitmask_offsets:
-                    output_set.add(base+offset)
-            ptr = nptr
+            bases = istructs[n].unpack_from(s, ptr)
+            ptr += istructs[n].size
+            output_set.update(base*64+offset for base in bases for offset in bitmask_offsets)
             i += n
 
     return output_set
-
-def get_bits(bitmask):
-    idx = 0
-    while bitmask != 0:
-        if bitmask & 1:
-            yield idx
-        bitmask >>= 1
-        idx += 1
 
 if __name__ == '__main__':
     import unittest, random, zlib
@@ -283,5 +268,31 @@ if __name__ == '__main__':
 # | write_bitset_json   | 3.478        | 50    |
 # +---------------------+--------------+-------+
 # | read_bitset         | 4.888        | 50    |
+# +---------------------+--------------+-------+
+
+
+# Add qstructs, update to pack_into/from, eliminate get_bits
+# +---------------------+--------------+-------+
+# |      Function       | Sum Duration | Calls |
+# +=====================+==============+=======+
+# | read_bitset_array   | 0.443        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_json    | 0.574        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_pickle  | 0.587        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_naive   | 0.703        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset        | 2.322        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_pickle | 2.552        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_naive  | 2.894        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset         | 3.148        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_array  | 3.227        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_json   | 3.464        | 50    |
 # +---------------------+--------------+-------+
 
