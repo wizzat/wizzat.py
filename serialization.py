@@ -9,7 +9,9 @@ def write_bitset_array(itr):
 
 @benchmark
 def read_bitset_array(s):
-    return set(array.array.fromstring(zlib.decompress(s)))
+    a = array.array('d')
+    a.fromstring(zlib.decompress(s))
+    return set(a)
 
 @benchmark
 def write_bitset_json(itr):
@@ -27,11 +29,12 @@ def write_bitset_pickle(itr):
 def read_bitset_pickle(s):
     return cPickle.loads(zlib.decompress(s))
 
+qstructs = [ struct.Struct('<{}Q'.format(x)) for x in xrange(251) ]
 @benchmark
 def write_bitset_naive(itr):
     l = []
     for chunk in chunks(list(itr), 250):
-        l.append(struct.pack('<{}Q'.format(len(chunk)), *chunk))
+        l.append( qstructs[len(chunk)].pack(*chunk) )
 
     return zlib.compress("".join(l))
 
@@ -41,7 +44,7 @@ def read_bitset_naive(s):
     output_set = set()
     i = 0
     for chunk in chunks(range(len(s)//8), 250):
-        chunk_set = struct.unpack_from('<{}Q'.format(len(chunk)), s, i)
+        chunk_set = qstructs[len(chunk)].unpack_from(s, i)
 
         output_set.update(chunk_set)
 
@@ -49,6 +52,8 @@ def read_bitset_naive(s):
 
     return output_set
 
+bmstruct = struct.Struct('<QI')
+istructs = [ struct.Struct('<{}I'.format(x)) for x in xrange(251) ]
 @benchmark
 def write_bitset(itr):
     parts   = collections.defaultdict(int)
@@ -59,35 +64,31 @@ def write_bitset(itr):
         offset   = element % 64
         parts[part_idx] |= (1 << offset)
 
-    maxlen = 0
-    last_bitmask = None
     for part_idx, bitmask in parts.iteritems():
-        l = buckets[bitmask]
-        l.append(part_idx)
-        maxlen = max(len(l), maxlen)
+        buckets[bitmask].append(part_idx)
 
-    l = [ struct.pack('<I', len(buckets)) ]
+    output_list = [ istructs[1].pack(len(buckets)) ]
 
     for bitmask, part_indexes in buckets.iteritems():
-        l.append( struct.pack('<QI', bitmask, len(part_indexes)) )
+        output_list.append( bmstruct.pack(bitmask, len(part_indexes)) )
         i = 0
         while i < len(part_indexes):
             n = min(len(part_indexes) - i, 250)
-            l.append( struct.pack('<{}I'.format(n), *part_indexes[i:i+n]) )
+            output_list.append( istructs[n].pack(*part_indexes[i:i+n]) )
             i += n
 
-    return "".join(l)
+    return "".join(output_list)
 
 @benchmark
 def read_bitset(s):
     output_set = set()
 
-    num_elements, = struct.unpack('<I', s[0:4])
+    num_elements, = istructs[1].unpack(s[0:4])
     ptr = 4
 
     for _ in xrange(num_elements):
         nptr = ptr + 12
-        bitmask, num_indexes = struct.unpack('<QI', s[ptr:nptr])
+        bitmask, num_indexes = bmstruct.unpack(s[ptr:nptr])
         bitmask_offsets = list(get_bits(bitmask))
         ptr = nptr
 
@@ -95,7 +96,7 @@ def read_bitset(s):
         while i < num_indexes:
             n = min(num_indexes - i, 250)
             nptr = ptr+n*4
-            bases = struct.unpack('<{}I'.format(n), s[ptr:nptr])
+            bases = istructs[n].unpack(s[ptr:nptr])
             for base in bases:
                 base *= 64
                 for offset in bitmask_offsets:
@@ -118,6 +119,7 @@ if __name__ == '__main__':
 
     class TestBitset(unittest.TestCase):
         funcs = {
+            'array' : [ write_bitset_array, read_bitset_array ],
             'naive' : [ write_bitset_naive, read_bitset_naive ],
             'pickle' : [ write_bitset_pickle, read_bitset_pickle ],
             'json' : [ write_bitset_json, read_bitset_json ],
@@ -257,3 +259,29 @@ if __name__ == '__main__':
 # | read_bitset         | 4.931        | 50    |
 # +---------------------+--------------+-------+
 # 
+
+# Before qstructs
+# +---------------------+--------------+-------+
+# |      Function       | Sum Duration | Calls |
+# +=====================+==============+=======+
+# | read_bitset_array   | 0.454        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_json    | 0.567        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_pickle  | 0.588        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_naive   | 0.804        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset        | 2.326        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_pickle | 2.566        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_naive  | 3.000        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_array  | 3.253        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_json   | 3.478        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset         | 4.888        | 50    |
+# +---------------------+--------------+-------+
+
