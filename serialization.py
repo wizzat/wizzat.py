@@ -1,4 +1,4 @@
-import collections, struct, cPickle, ujson as json
+import collections, struct, cPickle, json
 import bitarray, array
 from decorators import *
 from util import chunks
@@ -83,11 +83,12 @@ def read_bitset(s):
     ptr = 0
     num_elements, = istructs[1].unpack_from(s, 0)
     ptr += istructs[1].size
+    xr64 = xrange(64)
 
     for _ in xrange(num_elements):
         bitmask, num_indexes = bmstruct.unpack_from(s, ptr)
         ptr += bmstruct.size
-        bitmask_offsets = [ x for x in xrange(64) if bitmask & (1<<x) ]
+        bitmask_offsets = [ x for x in xr64 if bitmask & (1<<x) ]
 
         i = 0
         while i < num_indexes:
@@ -294,5 +295,32 @@ if __name__ == '__main__':
 # | write_bitset_array  | 3.227        | 50    |
 # +---------------------+--------------+-------+
 # | write_bitset_json   | 3.464        | 50    |
+# +---------------------+--------------+-------+
+
+
+
+# First pypy build, uses json instead of ujson
+# +---------------------+--------------+-------+
+# |      Function       | Sum Duration | Calls |
+# +=====================+==============+=======+
+# | write_bitset        | 0.554        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_array   | 0.903        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_pickle  | 0.964        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset         | 1.310        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_naive   | 1.563        | 50    |
+# +---------------------+--------------+-------+
+# | read_bitset_json    | 2.363        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_array  | 2.692        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_naive  | 2.887        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_pickle | 3.085        | 50    |
+# +---------------------+--------------+-------+
+# | write_bitset_json   | 3.432        | 50    |
 # +---------------------+--------------+-------+
 
