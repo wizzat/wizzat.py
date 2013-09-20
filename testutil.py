@@ -1,11 +1,12 @@
+import unittest, difflib, texttable, functools, os
 from pghelper import fetch_results
-import unittest, difflib, texttable, functools
 
 __all__ = [
     'AssertSQLMixin',
     'OfflineError',
     'skip_offline',
     'skip_unfinished',
+    'skip_performance',
 ]
 
 class OfflineError(Exception): pass
@@ -22,6 +23,19 @@ def skip_offline(func):
             self.skipTest("----- OFFLINE TEST -----")
 
         return retval
+    return wrapper
+
+def skip_performance(func):
+    """
+    This decorator is meant for tests.  It checks for $ENV{PERFORMANCE_TEST} and will issue skipTest without it.
+    """
+    @functools.wraps(func)
+    def wrapper(self):
+        if not os.environ.get('PERFORMANCE_TEST', False):
+            self.skipTest("----- PERFORMANCE TEST -----")
+        else:
+            return func(self)
+
     return wrapper
 
 def skip_unfinished(func):
