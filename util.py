@@ -4,8 +4,9 @@ import inspect
 __all__ = [
     'carp',
     'chunks',
-    'import_class'
+    'import_class',
     'merge_dicts',
+    'set_defaults',
     'swallow',
 ]
 
@@ -96,3 +97,11 @@ def chunks(iterable, chunk_size):
     for chunk_no in xrange(0, len(iterable), chunk_size):
         yield iterable[chunk_no:chunk_no+chunk_size]
 
+def set_defaults(kwargs, defaults = {}, **default_values):
+    if defaults:
+        defaults = dict(defaults)
+        defaults.update(kwargs)
+        return defaults
+    else:
+        default_values.update(kwargs)
+        return default_values

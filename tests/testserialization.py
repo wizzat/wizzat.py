@@ -2,7 +2,7 @@ import unittest, random, zlib, struct
 from serialization import *
 from testutil import *
 
-class TestSerialization(unittest.TestCase):
+class TestIntSet(unittest.TestCase):
     def test_write_int_set(self):
         self.assertEqual(write_int_set(set()), '\x00\x00\x00\x00')
         self.assertEqual(write_int_set({ 1, 2, 3 }, False), ''.join([
@@ -54,6 +54,7 @@ class TestSerialization(unittest.TestCase):
             self.assertEqual(read_int_set(write_int_set(s, False), False), s)
             self.assertEqual(read_int_set(write_int_set(s, True), True), s)
 
+class TestPackIterable(unittest.TestCase):
     def test_pack_iterable(self):
         self.assertEqual(pack_iterable([ 1, 2, 3, 3], 'H', False), ''.join([
             '\x01\x00', # 1
@@ -91,3 +92,12 @@ class TestSerialization(unittest.TestCase):
             s = [ random.choice(random_list) for _ in xrange(100) ]
             self.assertEqual(unpack_iterable(pack_iterable(s, 'Q', False), 'Q', False), s)
             self.assertEqual(unpack_iterable(pack_iterable(s, 'Q', True), 'Q', True), s)
+
+    def test_iterable__compression_exception(self):
+        self.assertRaises(zlib.error, lambda: unpack_iterable(''.join([
+            '\x01\x00', # 1
+            '\x02\x00', # 2
+            '\x03\x00', # 3
+            '\x03\x00', # 3
+        ]), 'H', True))
+
