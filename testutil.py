@@ -1,5 +1,6 @@
 import unittest, difflib, texttable, functools, os
 from pghelper import fetch_results
+from formattedtable import *
 
 __all__ = [
     'AssertSQLMixin',
@@ -60,9 +61,9 @@ class AssertSQLMixin(object):
         expected = tableize_grid(header, rows)
         actual   = tableize_obj_list(header, results)
 
-        diff = difflib.unified_diff(expected, actual)
+        diff = list(difflib.unified_diff(expected.split('\n'), actual.split('\n')))
         if diff:
             raise AssertionError("Assert failed for sql\n{sql}\n\n{diff}".format(
                 sql = sql,
-                diff = diff,
+                diff = '\n'.join(diff),
             ))

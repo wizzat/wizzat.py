@@ -12,6 +12,7 @@ __all__ = [
     #'vacuum',
     'currval',
     'nextval',
+    'DBTable',
 ]
 
 _log_func = None
@@ -138,4 +139,68 @@ def sql_where_from_params(**kwargs):
 
     return ' and '.join(clauses)
 
+##############################################################################################################
 
+class DBTable(object):
+    """
+    This is a micro-ORM for the purposes of not having dependencies on Django or SQLAlchemy.
+    """
+
+    def __init__(self, **kwargs):
+        for field in self.fields:
+            setattr(self, field, kwargs.get(field, None))
+
+    def get_dict(self):
+        return { field : getattr(self, field) for field in self.fields }
+
+    @classmethod
+    def find_by(cls, **kwargs):
+        sql = """
+            SELECT *
+            FROM {table_name}
+            where {where_clause}
+        """.format(
+            table_name = cls.table_name,
+            where_clause = sql_where_from_params(**kwargs)
+        )
+
+        for row in iter_results(cls.conn, sql, **kwargs):
+            yield cls(**row)
+
+    def lock_for_processing(self, nowait = False):
+        nowait = "nowait" if nowait else ""
+        sql = "SELECT * FROM {table_name} WHERE {key_field} = %({key_field}s) FOR UPDATE {nowait}".format(
+            table_name = self.table_name,
+            key_field  = self.key_field,
+            nowait     = nowait,
+        )
+
+        execute(self.conn, sql, **self.get_dict())
+
+        return self
+
+    def insert(self):
+        kv = { x:y for x,y in self.get_dict().iteritems() if y }
+        fields = kv.keys()
+        values = [ kv[x] for x in fields ]
+        sql = "INSERT INTO {table_name} ({fields}) VALUES ({values})".format(
+            table_name = self.table_name,
+            fields = ', '.join(fields),
+            values = ', '.join([ "%({})s".format(x) for x in fields ]),
+        )
+
+        execute(self.conn, sql, **kv)
+        self._is_in_db = True
+
+        return self
+
+    def update(self):
+        sql = "UPDATE {table_name} SET {field_equality}".format(
+            table_name = self.table_name,
+            field_equality = ', '.join([ "{0} = %({0})s".format(x) for x in self.fields ])
+        )
+
+        execute(self.conn, sql, **self.get_dict())
+        self._is_in_db = True
+
+        return self
