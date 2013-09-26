@@ -68,13 +68,14 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
 
     def test_insert(self):
         f1 = FooTable(a = 1, b = 2).insert()
-        f1 = FooTable(a = 1, b = 2).insert()
-        f2 = FooTable(a = 1, b = 3).insert()
-        f3 = FooTable(a = 2, b = 4).insert()
+        f2 = FooTable(a = 1, b = 2).insert()
+        f3 = FooTable(a = 1, b = 3).insert()
+        f4 = FooTable(a = 2, b = 4).insert()
 
         self.assertEqual(f1._is_in_db, True)
         self.assertEqual(f2._is_in_db, True)
         self.assertEqual(f3._is_in_db, True)
+        self.assertEqual(f4._is_in_db, True)
 
         self.assertSqlResults(self.conn, """
             SELECT *
@@ -113,9 +114,10 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
             [   1,   3, ],
         )
 
-    @skip_unfinished
     def test_update__does_not_exist(self):
-        pass
+        with self.assertRaises(AssertionError):
+            f1 = FooTable(a = 1, b = 2)
+            f1.update()
 
     def test_update__changes_primary_key_and_causes_integrity_violation(self):
         with self.assertRaises(psycopg2.IntegrityError):
@@ -128,5 +130,3 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
     @skip_unfinished
     def test_lock_for_processing(self):
         pass
-
-

@@ -183,24 +183,26 @@ class DBTable(object):
         kv = { x:y for x,y in self.get_dict().iteritems() if y }
         fields = kv.keys()
         values = [ kv[x] for x in fields ]
-        sql = "INSERT INTO {table_name} ({fields}) VALUES ({values})".format(
+        sql = "INSERT INTO {table_name} ({fields}) VALUES ({values}) RETURNING *".format(
             table_name = self.table_name,
             fields = ', '.join(fields),
             values = ', '.join([ "%({})s".format(x) for x in fields ]),
         )
 
-        execute(self.conn, sql, **kv)
+        results = fetch_results(self.conn, sql, **kv)
+        assert results
         self._is_in_db = True
 
         return self
 
     def update(self):
-        sql = "UPDATE {table_name} SET {field_equality}".format(
+        sql = "UPDATE {table_name} SET {field_equality} RETURNING *".format(
             table_name = self.table_name,
             field_equality = ', '.join([ "{0} = %({0})s".format(x) for x in self.fields ])
         )
 
-        execute(self.conn, sql, **self.get_dict())
+        results = fetch_results(self.conn, sql, **self.get_dict())
+        assert results
         self._is_in_db = True
 
         return self
