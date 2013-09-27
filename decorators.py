@@ -49,6 +49,14 @@ class MemoizeResults(object):
                 stat.clear()
 
     @classmethod
+    def cache_size(cls, stats):
+        # Pypy compatibility
+        try:
+            return sys.getsizeof(stats.cache)
+        except TypeError:
+            return 0
+
+    @classmethod
     def format_stats(cls):
         import texttable
         table = texttable.Texttable(0)
@@ -64,6 +72,12 @@ class MemoizeResults(object):
             'Cache Size',
         ])
 
+        def cache_size(stats):
+            try:
+                return sys.getsizeof(stats.cache)
+            except TypeError:
+                return 0
+
         for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1].calls):
             table.add_row([
                 func.__name__,                                                      # 'Function Name',
@@ -74,7 +88,7 @@ class MemoizeResults(object):
                 stats.exec_time,                                                    # 'Miss Time',
                 (stats.calls - stats.miss) * (stats.exec_time / (stats.miss or 1)), # 'Max Time Saved',
                 len(stats.cache),                                                   # 'Cache Items',
-                sys.getsizeof(stats.cache),                                         # 'Cache Size',
+                cls.cache_size(stats),                                              # 'Cache Size',
             ])
 
         return "Memoize Stats By Function\n\n" + table.draw()
@@ -105,7 +119,7 @@ class MemoizeResults(object):
                 stats.exec_time,                                                    # 'Miss Time',
                 (stats.calls - stats.miss) * (stats.exec_time / (stats.miss or 1)), # 'Max Time Saved',
                 len(stats.cache),                                                   # 'Cache Items',
-                sys.getsizeof(stats.cache),                                         # 'Cache Size',
+                cls.cache_size(stats),                                              # 'Cache Size',
             ] ]))
             fp.write("\n")
 

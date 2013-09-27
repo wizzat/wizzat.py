@@ -1,3 +1,9 @@
+try:
+    from psycopg2cffi import compat
+    compat.register()
+except ImportError:
+    pass
+
 import psycopg2
 import psycopg2.extras
 
@@ -169,7 +175,7 @@ class DBTable(object):
 
     def lock_for_processing(self, nowait = False):
         nowait = "nowait" if nowait else ""
-        sql = "SELECT * FROM {table_name} WHERE {key_field} = %({key_field}s) FOR UPDATE {nowait}".format(
+        sql = "SELECT * FROM {table_name} WHERE {key_field} = %({key_field})s FOR UPDATE {nowait}".format(
             table_name = self.table_name,
             key_field  = self.key_field,
             nowait     = nowait,

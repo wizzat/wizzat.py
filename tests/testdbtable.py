@@ -27,6 +27,7 @@ class BarTable(DBTable):
 
 class DBTableTest(unittest.TestCase, AssertSQLMixin):
     conn = None
+    conn2 = None
     def setUp(self):
         super(DBTableTest, self).setUp()
 
@@ -39,27 +40,42 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
                 database = 'pyutil_testdb',
             )
             self.conn.autocommit = False
+
+        if not self.conn2:
+            self.conn2 = psycopg2.connect(
+                host     = 'localhost',
+                port     = 5432,
+                user     = 'pyutil',
+                password = 'pyutil',
+                database = 'pyutil_testdb',
+            )
+            self.conn2.autocommit = False
+
+
         FooTable.conn = self.conn
         BarTable.conn = self.conn
 
-        execute(self.conn, "drop table if exists foo")
-        execute(self.conn, "create table foo (a integer, b integer)")
+        execute(self.conn, "DROP TABLE IF EXISTS foo")
+        execute(self.conn, "CREATE TABLE foo (a INTEGER, b INTEGER)")
 
-        execute(self.conn, "drop table if exists bar")
-        execute(self.conn, "create table bar (a integer primary key, b integer, c integer)")
+        execute(self.conn, "DROP TABLE IF EXISTS bar")
+        execute(self.conn, "CREATE TABLE bar (a INTEGER PRIMARY KEY, b INTEGER, c INTEGER)")
         self.conn.commit()
+        self.conn2.commit()
 
     def tearDown(self):
         super(DBTableTest, self).tearDown()
         swallow(Exception, self.conn.close)
+        swallow(Exception, self.conn2.close)
         FooTable.conn = None
         BarTable.conn = None
         del self.conn
+        del self.conn2
 
     def test_find_by(self):
-        execute(self.conn, "insert into foo (a, b) values (1, 2)")
-        execute(self.conn, "insert into foo (a, b) values (1, 3)")
-        execute(self.conn, "insert into foo (a, b) values (2, 3)")
+        execute(self.conn, "INSERT INTO foo (a, b) VALUES (1, 2)")
+        execute(self.conn, "INSERT INTO foo (a, b) VALUES (1, 3)")
+        execute(self.conn, "INSERT INTO foo (a, b) VALUES (2, 3)")
 
         self.assertEqual(sorted([ x.get_dict() for x in FooTable.find_by(a = 1) ]), sorted([
             { 'a' : 1, 'b' : 2 },
@@ -127,6 +143,13 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
             f2.a = f1.a
             f2.update()
 
-    @skip_unfinished
     def test_lock_for_processing(self):
-        pass
+        f1 = BarTable(a = 1, b = 2, c = 3).insert()
+        f2 = BarTable(a = 2, b = 2, c = 3).insert()
+        f3 = BarTable(a = 3, b = 2, c = 3).insert()
+        self.conn.commit()
+
+        f1.lock_for_processing()
+
+        with self.assertRaises(psycopg2.OperationalError):
+            execute(self.conn2, "select * from bar for update nowait")
