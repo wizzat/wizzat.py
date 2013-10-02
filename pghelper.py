@@ -161,19 +161,35 @@ class DBTable(object):
 
     @classmethod
     def find_by(cls, **kwargs):
+        """
+        Returns rows which match all key/value pairs
+        Additionally, accepts for_update = True/False, nowait = True/False
+        """
+        for_update = kwargs.pop('for_update', False)
+        nowait = kwargs.pop('nowait', False)
+
+        for_update = 'for update' if for_update else ''
+        nowait = 'nowait' if nowait else ''
+
         sql = """
             SELECT *
             FROM {table_name}
             where {where_clause}
+            {for_update} {nowait}
         """.format(
             table_name = cls.table_name,
-            where_clause = sql_where_from_params(**kwargs)
+            where_clause = sql_where_from_params(**kwargs),
+            for_update = for_update,
+            nowait = nowait,
         )
 
         for row in iter_results(cls.conn, sql, **kwargs):
             yield cls(**row)
 
     def lock_for_processing(self, nowait = False):
+        """
+        Locks a row in the database for update.  Requires a primary key.
+        """
         nowait = "nowait" if nowait else ""
         sql = "SELECT * FROM {table_name} WHERE {key_field} = %({key_field})s FOR UPDATE {nowait}".format(
             table_name = self.table_name,
@@ -186,6 +202,9 @@ class DBTable(object):
         return self
 
     def insert(self):
+        """
+        Inserts a row into the database, and returns that row.
+        """
         kv = { x:y for x,y in self.get_dict().iteritems() if y }
         fields = kv.keys()
         values = [ kv[x] for x in fields ]
@@ -202,6 +221,9 @@ class DBTable(object):
         return self
 
     def update(self):
+        """
+        Updates a row in the database, and returns that row.
+        """
         sql = "UPDATE {table_name} SET {field_equality} RETURNING *".format(
             table_name = self.table_name,
             field_equality = ', '.join([ "{0} = %({0})s".format(x) for x in self.fields ])

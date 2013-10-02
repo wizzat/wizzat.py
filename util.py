@@ -112,6 +112,15 @@ def chunks(iterable, chunk_size):
         yield iterable[chunk_no:chunk_no+chunk_size]
 
 def set_defaults(kwargs, defaults = {}, **default_values):
+    """
+    Returns kwargs with defaults set.
+    Has two forms:
+    kwargs = set_defaults(kwargs, { 'value1' : 'value1', 'value2' : 'value2' })
+    kwargs = set_defaults(kwargs,
+        value1 = 'value1',
+        value2 = 'value2',
+    )
+    """
     if defaults:
         defaults = dict(defaults)
         defaults.update(kwargs)
@@ -121,5 +130,8 @@ def set_defaults(kwargs, defaults = {}, **default_values):
         return default_values
 
 def slurp(filename):
+    """
+    Find the named file, read it into memory, and return it as a string.
+    """
     with open(filename, 'r') as fp:
         return fp.read()
