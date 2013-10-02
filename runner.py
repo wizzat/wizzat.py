@@ -28,9 +28,13 @@ class RunnerBase(object):
     def run(self):
         if not self.should_run():
             return
-        self._run()
 
-        return self
+        try:
+            self._run()
+            return self
+        except Exception:
+            logging.exception("Caught exception")
+            raise
 
     def setup_connections(self):
         pass
@@ -41,7 +45,7 @@ class RunnerBase(object):
     def setup_logging(self):
         cls = type(self)
         self.process_name = self.process_name or "{}.{}".format(cls.__module__, cls.__name__)
-        log_file = os.path.join(self.log_root, self.process_name + '.log')
+        self.log_file = os.path.join(self.log_root, self.process_name + '.log')
 
         mkdirp(self.log_root)
 
@@ -54,7 +58,7 @@ class RunnerBase(object):
 
         logging.basicConfig(
             format   = '%(asctime)s.%(msecs)s:%(name)s:%(thread)d:%(levelname)s:%(process)d:%(message)s',
-            filename = log_file,
+            filename = self.log_file,
             level    = logging.INFO,
         )
 

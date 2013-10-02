@@ -49,6 +49,19 @@ class TestRunnerBase(unittest.TestCase):
         runner1 = RunnerA().run()
         runner2 = RunnerB().run()
 
+        self.assertTrue('RunnerA' in runner1.log_file)
+        self.assertTrue('RunnerB' in runner2.log_file)
         self.assertNotEqual(runner1.log_file, runner2.log_file)
-        self.assertEqual(runner1.uuid in slurp(runner1.log_file), True)
-        self.assertEqual(runner2.uuid in slurp(runner2.log_file), True)
+        self.assertTrue(runner1.uuid in slurp(runner1.log_file))
+        self.assertTrue(runner2.uuid in slurp(runner2.log_file))
+
+    def test_exception_handling(self):
+        class Runner(RunnerBase):
+            def _run(self):
+                1 / 0
+
+        runner = Runner()
+        with self.assertRaises(ZeroDivisionError):
+            runner = runner.run()
+
+        self.assertTrue('ZeroDivisionError' in slurp(runner.log_file))
