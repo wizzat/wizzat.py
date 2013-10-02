@@ -1,6 +1,6 @@
 import unittest, random, zlib, struct
-from serialization import *
-from testutil import *
+from pyutil.serialization import *
+from pyutil.testutil import *
 
 class TestIntSet(unittest.TestCase):
     def test_write_int_set(self):

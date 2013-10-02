@@ -1,6 +1,6 @@
 import psycopg2
 import unittest
-import pghelper
+from pyutil import pghelper
 
 class PgHelperTest(unittest.TestCase):
     connection_info = {

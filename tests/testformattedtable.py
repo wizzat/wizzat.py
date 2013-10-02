@@ -1,4 +1,4 @@
-from formattedtable import *
+from pyutil.formattedtable import *
 import unittest
 
 class FormattedTableTest(unittest.TestCase):

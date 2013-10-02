@@ -1,4 +1,4 @@
-from decorators import *
+from pyutil.decorators import *
 import unittest, time
 
 class MemoizeTest(unittest.TestCase):

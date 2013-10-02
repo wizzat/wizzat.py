@@ -1,9 +1,8 @@
 import psycopg2
 import unittest
-import pghelper
-from util import *
-from pghelper import *
-from testutil import *
+from pyutil.util import *
+from pyutil.pghelper import *
+from pyutil.testutil import *
 
 # You probably want to define these in a centralized location somewhere like a models.py
 class FooTable(DBTable):

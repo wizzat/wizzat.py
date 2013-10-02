@@ -1,4 +1,4 @@
-export VIMSERVER=DEV
+export VIMSERVER=VIM
 
 function pyutil_env {
     export PS1="PYUTIL \W$ "
