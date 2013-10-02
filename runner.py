@@ -1,4 +1,5 @@
-import logging, signal
+import logging, signal, os, os.path
+from util import mkdirp
 
 __all__ = [
     'RunnerBase',
@@ -15,7 +16,6 @@ class RunnerBase(object):
 
     def __init__(self, **params):
         self.__dict__.update(params)
-        self.should_run  = True
         self.terminated  = False
         self.interrupted = False
 
@@ -26,7 +26,7 @@ class RunnerBase(object):
             signal.signal(sig, getattr(self, func))
 
     def run(self):
-        if not self.check_if_should_run():
+        if not self.should_run():
             return
         self._run()
 
@@ -42,6 +42,8 @@ class RunnerBase(object):
         cls = type(self)
         self.process_name = self.process_name or "{}.{}".format(cls.__module__, cls.__name__)
         log_file = os.path.join(self.log_root, self.process_name + '.log')
+
+        mkdirp(self.log_root)
 
         # http://stackoverflow.com/questions/1943747/python-logging-before-you-run-logging-basicconfig
         # This lets you run these guys in tests with a different logging conf per runner

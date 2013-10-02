@@ -1,5 +1,4 @@
-import sys
-import inspect
+import sys, inspect, errno, os
 
 __all__ = [
     'carp',
@@ -8,7 +7,22 @@ __all__ = [
     'merge_dicts',
     'set_defaults',
     'swallow',
+    'mkdirp',
+    'slurp',
 ]
+
+def mkdirp(path):
+    """
+        Ensure that directory :path exists.
+        Analogous to mkdir -p
+
+        See http://stackoverflow.com/questions/10539823/python-os-makedirs-to-recreate-path
+    """
+    try:
+        os.makedirs(path)
+    except OSError, e:
+        if e.errno != errno.EEXIST:
+            raise
 
 def merge_dicts(*iterable):
     """
@@ -105,3 +119,7 @@ def set_defaults(kwargs, defaults = {}, **default_values):
     else:
         default_values.update(kwargs)
         return default_values
+
+def slurp(filename):
+    with open(filename, 'r') as fp:
+        return fp.read()

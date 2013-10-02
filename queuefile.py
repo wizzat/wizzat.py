@@ -1,20 +1,9 @@
 import Queue, gzip, time, threading, os, fcntl, shutil, json
+from util import mkdirp
 
 __all__ = [
-    'mkdirp',
     'QueueFile',
 ]
-
-def mkdirp(path):
-    """
-        Ensure that directory :path exists.
-        Analogous to mkdir -p
-    """
-    try:
-        os.makedirs(path)
-    except OSError, e:
-        if e.strerror != "File exists":
-            raise
 
 class QueueFile(object):
     """
