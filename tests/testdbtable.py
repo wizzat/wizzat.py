@@ -168,6 +168,11 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
             f2.a = f1.a
             f2.update()
 
+    @skip_unfinished
+    def test_delete(self):
+        f1 = BarTable(a = 1, b = 2, c = 3).update()
+        f1.delete()
+
     def test_lock_for_processing(self):
         f1 = BarTable(a = 1, b = 2, c = 3).update()
         f2 = BarTable(a = 2, b = 2, c = 3).update()
