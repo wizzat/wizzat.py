@@ -56,9 +56,8 @@ def iter_results(conn, sql, **bind_params):
     """
     global _log_func
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-        bound_sql = cur.mogrify(sql, bind_params)
-
         if _log_func:
+            bound_sql = cur.mogrify(sql, bind_params)
             _log_func(bound_sql)
 
         cur.execute(sql, bind_params)
@@ -72,12 +71,15 @@ def fetch_results(conn, sql, **bind_params):
     """
     global _log_func
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-        bound_sql = cur.mogrify(sql, bind_params)
-
         if _log_func:
+            bound_sql = cur.mogrify(sql, bind_params)
             _log_func(bound_sql)
 
-        cur.execute(sql, bind_params)
+        try:
+            cur.execute(sql, bind_params)
+        except psycopg2.ProgrammingError:
+            print cur.mogrify(sql, bind_params)
+            raise
         return cur.fetchall()
 
 def copy_from(conn, fp, table_name, columns = None):
@@ -152,7 +154,9 @@ class DBTable(object):
     This is a micro-ORM for the purposes of not having dependencies on Django or SQLAlchemy.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, _is_in_db = False, **kwargs):
+        self.db_fields = kwargs if _is_in_db else {}
+
         for field in self.fields:
             setattr(self, field, kwargs.get(field, None))
 
@@ -184,7 +188,7 @@ class DBTable(object):
         )
 
         for row in iter_results(cls.conn, sql, **kwargs):
-            yield cls(**row)
+            yield cls(_is_in_db = True, **row)
 
     def lock_for_processing(self, nowait = False):
         """
@@ -201,7 +205,13 @@ class DBTable(object):
 
         return self
 
-    def insert(self):
+    def update(self):
+        if self.db_fields:
+            return self._update()
+        else:
+            return self._insert()
+
+    def _insert(self):
         """
         Inserts a row into the database, and returns that row.
         """
@@ -214,23 +224,48 @@ class DBTable(object):
             values = ', '.join([ "%({})s".format(x) for x in fields ]),
         )
 
-        results = fetch_results(self.conn, sql, **kv)
-        assert results
-        self._is_in_db = True
+        self.db_fields = dict(fetch_results(self.conn, sql, **kv)[0])
+        assert self.db_fields
 
         return self
 
-    def update(self):
+    def _update(self):
         """
         Updates a row in the database, and returns that row.
         """
-        sql = "UPDATE {table_name} SET {field_equality} RETURNING *".format(
-            table_name = self.table_name,
-            field_equality = ', '.join([ "{0} = %({0})s".format(x) for x in self.fields ])
+        new_values = self.get_dict()
+        bind_params = { x : new_values[x] for x in self.fields if new_values[x] != self.db_fields[x] }
+        if not bind_params:
+            return self
+
+        field_equality = ', '.join([ "{0} = %({0})s".format(x) for x in bind_params.iterkeys() ])
+
+        if self.key_field:
+            assert getattr(self, self.key_field) == self.db_fields[self.key_field]
+            filter_clause = '{0} = %({0})s'.format(self.key_field)
+            bind_params[self.key_field] = getattr(self, self.key_field)
+        else:
+            filter_clause = ' and '.join([ '{0} = %(orig_{0})s'.format(field) for field in self.db_fields ])
+            bind_params.update({ "orig_{}".format(x) : y for x, y in self.db_fields.iteritems() })
+
+        sql = """
+            UPDATE {table_name}
+            SET {field_equality}
+            WHERE {filter_clause}
+            RETURNING *
+        """.format(
+            table_name     = self.table_name,
+            field_equality = field_equality,
+            filter_clause  = filter_clause,
         )
 
-        results = fetch_results(self.conn, sql, **self.get_dict())
-        assert results
-        self._is_in_db = True
+        self.db_fields = dict(fetch_results(self.conn, sql, **bind_params)[0])
+        assert self.db_fields
 
         return self
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()

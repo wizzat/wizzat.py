@@ -82,15 +82,15 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
         ]))
 
     def test_insert(self):
-        f1 = FooTable(a = 1, b = 2).insert()
-        f2 = FooTable(a = 1, b = 2).insert()
-        f3 = FooTable(a = 1, b = 3).insert()
-        f4 = FooTable(a = 2, b = 4).insert()
+        f1 = FooTable(a = 1, b = 2).update()
+        f2 = FooTable(a = 1, b = 2).update()
+        f3 = FooTable(a = 1, b = 3).update()
+        f4 = FooTable(a = 2, b = 4).update()
 
-        self.assertEqual(f1._is_in_db, True)
-        self.assertEqual(f2._is_in_db, True)
-        self.assertEqual(f3._is_in_db, True)
-        self.assertEqual(f4._is_in_db, True)
+        self.assertEqual(f1.db_fields, { "a" : 1, "b" : 2, })
+        self.assertEqual(f2.db_fields, { "a" : 1, "b" : 2, })
+        self.assertEqual(f3.db_fields, { "a" : 1, "b" : 3, })
+        self.assertEqual(f4.db_fields, { "a" : 2, "b" : 4, })
 
         self.assertSqlResults(self.conn, """
             SELECT *
@@ -106,18 +106,49 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
 
     def test_insert__already_exists(self):
         with self.assertRaises(psycopg2.IntegrityError):
-            f1 = BarTable(a = 1, b = 2, c = 3).insert()
-            f2 = BarTable(a = 1, b = 2, c = 3).insert()
-        self.conn.rollback()
-
-        with self.assertRaises(psycopg2.IntegrityError):
-            f1 = BarTable(a = 1, b = 2, c = 3).insert()
-            f1.insert()
+            f1 = BarTable(a = 1, b = 2, c = 3).update()
+            f2 = BarTable(a = 1, b = 2, c = 3).update()
         self.conn.rollback()
 
     def test_update(self):
-        f1 = FooTable(a = 1, b = 2).insert()
+        f1 = FooTable(a = 1, b = 2).update()
+        f2 = FooTable(a = 1, b = 3).update()
+        f3 = FooTable(a = 2, b = 4).update()
+        f1.commit()
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM foo
+            ORDER BY a, b
+        """,
+            [ 'a', 'b', ],
+            [  1,   2,  ],
+            [  1,   3,  ],
+            [  2,   4,  ],
+        )
+
+        self.sql = None
+        def log_func(sql):
+            self.sql = sql
+
         f1.b = 3
+        f1.update()
+        f1.commit()
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM foo
+            ORDER BY a, b
+        """,
+            [ 'a', 'b', ],
+            [  1,   3,  ],
+            [  1,   3,  ],
+            [  2,   4,  ],
+        )
+
+
+    def test_update__inserts_when_not_in_database(self):
+        f1 = FooTable(a = 1, b = 2)
         f1.update()
 
         self.assertSqlResults(self.conn, """
@@ -126,26 +157,21 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
             ORDER BY a, b
         """,
             [ 'a', 'b', ],
-            [   1,   3, ],
+            [  1,   2,  ],
         )
 
-    def test_update__does_not_exist(self):
+    def test_update__catches_primary_key_changes(self):
         with self.assertRaises(AssertionError):
-            f1 = FooTable(a = 1, b = 2)
-            f1.update()
-
-    def test_update__changes_primary_key_and_causes_integrity_violation(self):
-        with self.assertRaises(psycopg2.IntegrityError):
-            f1 = BarTable(a = 1, b = 2, c = 3).insert()
-            f2 = BarTable(a = 2, b = 2, c = 3).insert()
+            f1 = BarTable(a = 1, b = 2, c = 3).update()
+            f2 = BarTable(a = 2, b = 2, c = 3).update()
 
             f2.a = f1.a
             f2.update()
 
     def test_lock_for_processing(self):
-        f1 = BarTable(a = 1, b = 2, c = 3).insert()
-        f2 = BarTable(a = 2, b = 2, c = 3).insert()
-        f3 = BarTable(a = 3, b = 2, c = 3).insert()
+        f1 = BarTable(a = 1, b = 2, c = 3).update()
+        f2 = BarTable(a = 2, b = 2, c = 3).update()
+        f3 = BarTable(a = 3, b = 2, c = 3).update()
         self.conn.commit()
 
         f1.lock_for_processing()
