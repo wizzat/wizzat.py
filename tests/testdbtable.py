@@ -55,7 +55,7 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
         BarTable.conn = self.conn
 
         execute(self.conn, "DROP TABLE IF EXISTS foo")
-        execute(self.conn, "CREATE TABLE foo (a INTEGER, b INTEGER)")
+        execute(self.conn, "CREATE TABLE foo (a INTEGER, b INTEGER DEFAULT 1)")
 
         execute(self.conn, "DROP TABLE IF EXISTS bar")
         execute(self.conn, "CREATE TABLE bar (a INTEGER PRIMARY KEY, b INTEGER, c INTEGER)")
@@ -103,6 +103,10 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
             [   1,   3, ],
             [   2,   4, ],
         )
+
+    def test_insert_default_values(self):
+        f1 = FooTable(a = 1).update()
+        self.assertEqual(f1.b, 1)
 
     def test_insert__already_exists(self):
         with self.assertRaises(psycopg2.IntegrityError):

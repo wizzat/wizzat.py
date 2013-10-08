@@ -227,6 +227,9 @@ class DBTable(object):
         self.db_fields = dict(fetch_results(self.conn, sql, **kv)[0])
         assert self.db_fields
 
+        for k, v in self.db_fields.iteritems():
+            setattr(self, k, v)
+
         return self
 
     def _update(self):
@@ -261,6 +264,8 @@ class DBTable(object):
 
         self.db_fields = dict(fetch_results(self.conn, sql, **bind_params)[0])
         assert self.db_fields
+        for k, v in self.db_fields.iteritems():
+            setattr(self, k, v)
 
         return self
 
