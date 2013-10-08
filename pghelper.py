@@ -265,19 +265,23 @@ class DBTable(object):
         return self
 
     def delete(self):
+        if not self.db_fields:
+            return []
+
         if self.key_field:
             sql = "DELETE FROM {table_name} WHERE {key_field} = %({key_field})s RETURNING *".format(
                 table_name = self.table_name,
                 key_field  = self.key_field,
             )
-
-            return fetch_results(sql, **self.get_dict())
         else:
-            field_equality = ' AND '.join([ "{0} = %({0})s".format(x) for x in self.get_dict().iterkeys() ])
+            field_equality = ' AND '.join([ "{0} = %({0})s".format(x) for x in self.db_fields.iterkeys() ])
             sql = "DELETE FROM {table_name} WHERE {field_equality} RETURNING *".format(
                 table_name = self.table_name,
-                key_field  = self.key_field
+                key_field  = self.key_field,
+                field_equality = field_equality,
             )
+
+        return fetch_results(self.conn, sql, **self.db_fields)
 
     def commit(self):
         self.conn.commit()

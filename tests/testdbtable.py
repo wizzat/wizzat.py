@@ -168,10 +168,55 @@ class DBTableTest(unittest.TestCase, AssertSQLMixin):
             f2.a = f1.a
             f2.update()
 
-    @skip_unfinished
-    def test_delete(self):
-        f1 = BarTable(a = 1, b = 2, c = 3).update()
+    def test_delete__deletes_all_rows_that_look_like_the_deleted_row(self):
+        f1 = FooTable(a = 1, b = 2).update()
+        f2 = FooTable(a = 1, b = 2).update()
+        self.assertEqual(len(f1.delete()), 2)
+        f1.commit()
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM foo
+            ORDER BY a, b
+        """,
+            [ 'a', 'b', ],
+        )
+
+    def test_deletes_based_on_db_fields(self):
+        f1 = FooTable(a = 1, b = 2).update()
+        f2 = FooTable(a = 1, b = 2).update()
+        f1.b = 3
+
+        self.assertEqual(len(f1.delete()), 2)
+        f1.commit()
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM foo
+            ORDER BY a, b
+        """,
+            [ 'a', 'b', ],
+        )
+
+    def test_deletes_based_on_primary_key_and_db_fields(self):
+        f1 = BarTable(a = 1, b = 2).update()
+        f2 = BarTable(a = 2, b = 3).update()
+        f1.a = 2
         f1.delete()
+        f1.commit()
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM bar
+            ORDER BY a, b
+        """,
+            [ 'a',  'b',  ],
+            [ 2,    3,    ],
+        )
+
+    def test_delete_does_not_error_if_not_in_db(self):
+        f1 = FooTable(a = 1, b = 2)
+        self.assertEqual(f1.delete(), [])
 
     def test_lock_for_processing(self):
         f1 = BarTable(a = 1, b = 2, c = 3).update()
