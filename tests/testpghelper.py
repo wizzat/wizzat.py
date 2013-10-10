@@ -109,9 +109,10 @@ class PgHelperTest(unittest.TestCase):
         clause = pghelper.sql_where_from_params(
             foo = True,
             bar = [ 1,2,3 ],
+            sam = None,
         )
 
-        self.assertEqual(clause, 'true and foo = %(foo)s and bar in (%(bar)s)')
+        self.assertEqual(clause, 'true and foo = %(foo)s and bar in (%(bar)s) and sam is null')
 
     def test_where_clause__empty_list(self):
         clause = pghelper.sql_where_from_params(
