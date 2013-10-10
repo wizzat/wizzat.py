@@ -100,4 +100,3 @@ class TestPackIterable(unittest.TestCase):
             '\x03\x00', # 3
             '\x03\x00', # 3
         ]), 'H', True))
-

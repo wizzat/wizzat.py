@@ -6,6 +6,7 @@ except ImportError:
 
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 from types import *
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     'currval',
     'nextval',
     'DBTable',
+    'ConnMgr',
 ]
 
 _log_func = None
@@ -294,3 +296,57 @@ class DBTable(object):
 
     def rollback(self):
         self.conn.rollback()
+
+
+class ConnMgr(object):
+    all_mgrs = []
+    def __init__(self, **conn_info):
+        self.conn_info = conn_info
+        self.minconn   = self.conn_info.pop('minconn', 0)
+        self.maxconn   = self.conn_info.pop('maxconn', 5)
+        self.pool      = psycopg2.pool.ThreadedConnectionPool(self.minconn, self.maxconn, **self.conn_info)
+        self.connections = {}
+        self.all_mgrs.append(self)
+
+    default_mgr = None
+    @classmethod
+    def default(cls):
+        return cls.default_mgr
+
+    def setdefault(self):
+        type(self).default_mgr = self
+
+    def getconn(self, name):
+        if not hasattr(self, name):
+            conn = self.pool.getconn()
+            self.connections[name] = conn
+            setattr(self, name, conn)
+
+        return getattr(self, name)
+
+    def putconn(self, name, commit = True):
+        conn = self.connections.pop(name)
+        delattr(self, name)
+
+        if commit:
+            conn.commit()
+        else:
+            conn.rollback()
+
+        self.pool.putconn(conn)
+
+    def commit(self):
+        for key, conn in self.connections.iteritems():
+            conn.commit()
+
+    def rollback(self):
+        for key, conn in self.connections.iteritems():
+            conn.rollback()
+
+    def putall(self):
+        for k in self.connections.keys():
+            self.putconn(k)
+
+    def closeall(self):
+        self.putall()
+        self.pool.closeall()

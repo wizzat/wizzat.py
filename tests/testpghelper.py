@@ -121,7 +121,3 @@ class PgHelperTest(unittest.TestCase):
         )
 
         self.assertEqual(clause, 'true = false')
-
-
-if __name__ == '__main__':
-    unittest.main()

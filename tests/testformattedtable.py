@@ -40,6 +40,3 @@ class FormattedTableTest(unittest.TestCase):
         """.split("\n") if x.strip() ]
 
         self.assertEqual(actual_grid, expected_grid)
-
-if __name__ == '__main__':
-    unittest.main()
