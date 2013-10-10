@@ -193,7 +193,7 @@ class DBTable(object):
         for row in iter_results(cls.conn, sql, **kwargs):
             yield cls(_is_in_db = True, **row)
 
-    def lock_for_processing(self, nowait = False):
+    def rowlock(self, nowait = False):
         """
         Locks a row in the database for update.  Requires a primary key.
         """
@@ -297,7 +297,6 @@ class DBTable(object):
     def rollback(self):
         self.conn.rollback()
 
-
 class ConnMgr(object):
     all_mgrs = []
     def __init__(self, **conn_info):
@@ -327,6 +326,7 @@ class ConnMgr(object):
     def getconn(self, name):
         if not hasattr(self, name):
             conn = self.pool.getconn()
+            conn.autocommit = False
             self.connections[name] = conn
             setattr(self, name, conn)
 

@@ -188,13 +188,13 @@ class DBTableTest(AssertSQLMixin, PyUtilTestCase):
         f1 = FooTable(a = 1, b = 2)
         self.assertEqual(f1.delete(), [])
 
-    def test_lock_for_processing(self):
+    def test_rowlock(self):
         f1 = BarTable(a = 1, b = 2, c = 3).update()
         f2 = BarTable(a = 2, b = 2, c = 3).update()
         f3 = BarTable(a = 3, b = 2, c = 3).update()
         self.conn.commit()
 
-        f1.lock_for_processing()
+        f1.rowlock()
 
         with self.assertRaises(psycopg2.OperationalError):
             execute(self.mgr.getconn("conn2"), "select * from bar for update nowait")

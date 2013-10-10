@@ -59,7 +59,16 @@ class AssertSQLMixin(object):
         self.conn = self.mgr.getconn("conn")
 
     def teardown_connections(self):
+        # First tear down all the other connection pools
+        while ConnMgr.all_mgrs:
+            mgr = ConnMgr.all_mgrs.pop()
+            if mgr != self.mgr:
+                mgr.rollback()
+                mgr.closeall()
+
+        # Now tear ours down and put it back
         self.mgr.rollback()
+        ConnMgr.all_mgrs.append(self.mgr)
 
     def assertSqlResults(self, conn, sql, *rows):
         header, rows = rows[0], rows[1:]
