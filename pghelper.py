@@ -6,6 +6,7 @@ except ImportError:
 
 import psycopg2
 import psycopg2.extras
+from types import *
 
 __all__ = [
     'execute',
@@ -140,9 +141,9 @@ def sql_where_from_params(**kwargs):
                 break
 
         clauses.append({
-            None  : "{0} is null".format(key),
-            list  : "{0} in (%({0})s)".format(key),
-            tuple : "{0} in (%({0})s)".format(key),
+            NoneType : "{0} is null".format(key),
+            list     : "{0} in (%({0})s)".format(key),
+            tuple    : "{0} in (%({0})s)".format(key),
         }.get(type(value), "{0} = %({0})s".format(key)))
 
     return ' and '.join(clauses)

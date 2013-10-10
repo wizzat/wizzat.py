@@ -1,23 +1,28 @@
 import datetime, types, calendar
 
 __all__ = [
-    'now',
-    'set_now',
-    'reset_now',
+    'clear_date_formats',
     'coerce_date',
+    'days',
     'from_epoch',
+    'hours',
+    'minutes',
+    'now',
     'parse_date',
     'register_date_format',
-    'clear_date_formats',
-    'to_epoch',
-    'to_second',
-    'to_minute',
-    'to_hour',
+    'reset_now',
+    'seconds',
+    'set_now',
     'to_day',
-    'to_week',
+    'to_epoch',
+    'to_hour',
+    'to_minute',
     'to_month',
     'to_quarter',
+    'to_second',
+    'to_week',
     'to_year',
+    'weeks',
 ]
 
 _now = None
@@ -188,3 +193,32 @@ def to_year(dt):
         microsecond = 0,
     )
 
+def seconds(n):
+    """
+    Returns a datetime.timedelta object for n seconds
+    """
+    return datetime.timedelta(seconds = n)
+
+def minutes(n):
+    """
+    Returns a datetime.timedelta object for n minutes
+    """
+    return datetime.timedelta(minutes = n)
+
+def hours(n):
+    """
+    Returns a datetime.timedelta object for n hours
+    """
+    return datetime.timedelta(hours = n)
+
+def days(n):
+    """
+    Returns a datetime.timedelta object for n days
+    """
+    return datetime.timedelta(days = n)
+
+def weeks(n):
+    """
+    Returns a datetime.timedelta object for n weeks
+    """
+    return datetime.timedelta(weeks = n)
