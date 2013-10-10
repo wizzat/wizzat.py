@@ -313,6 +313,14 @@ class ConnMgr(object):
     def default(cls):
         return cls.default_mgr
 
+    @classmethod
+    def default_from_info(cls, **info):
+        if not cls.default_mgr or cls.default_mgr.pool.closed:
+            mgr = cls(**info)
+            mgr.setdefault()
+
+        return cls.default_mgr
+
     def setdefault(self):
         type(self).default_mgr = self
 

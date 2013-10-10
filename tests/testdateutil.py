@@ -1,8 +1,9 @@
 from pyutil.testutil import *
 from pyutil.dateutil import *
-import unittest, datetime, time
+from testcase import PyUtilTestCase
+import datetime, time
 
-class TestDateUtil(unittest.TestCase):
+class TestDateUtil(PyUtilTestCase):
     def test_epoch_handling(self):
         self.assertEqual(from_epoch(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
         self.assertEqual(to_epoch(datetime.datetime(2013, 9, 9, 15, 52, 19)), 1378741939)

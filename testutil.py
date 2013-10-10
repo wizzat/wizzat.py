@@ -1,5 +1,5 @@
 import unittest, difflib, texttable, functools, os
-from pghelper import fetch_results
+from pghelper import ConnMgr, fetch_results
 from formattedtable import *
 
 __all__ = [
@@ -54,6 +54,13 @@ class AssertSQLMixin(object):
     """
     Mixin for assertSqlResults
     """
+    def setup_connections(self):
+        self.mgr = ConnMgr.default_from_info(**self.db_info)
+        self.conn = self.mgr.getconn("conn")
+
+    def teardown_connections(self):
+        self.mgr.rollback()
+
     def assertSqlResults(self, conn, sql, *rows):
         header, rows = rows[0], rows[1:]
         results = fetch_results(conn, sql)
