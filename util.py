@@ -9,6 +9,9 @@ __all__ = [
     'swallow',
     'mkdirp',
     'slurp',
+    'is_online',
+    'set_online',
+    'reset_online',
 ]
 
 def mkdirp(path):
@@ -135,3 +138,38 @@ def slurp(filename):
     """
     with open(filename, 'r') as fp:
         return fp.read()
+
+class OfflineError(Exception): pass
+
+def assert_online():
+    """
+    This method tests the OFFLINE environment variable and throws OfflineError().  This directly
+    hooks into @skip_offline, but can be used in other situations as well.
+    """
+    if not is_online():
+        import testutil
+        raise OfflineError()
+
+# Initial value for _offline set from environment
+_offline = None
+def is_online():
+    """
+    This method tests the OFFLINE environment variable and the global offline state.
+    """
+    global _offline
+    return _offline
+
+def set_online(value):
+    """
+    Sets the global offline state
+    """
+    global _offline
+    _offline = value
+
+def reset_online():
+    """
+    Resets the global offline state
+    """
+    global _offline
+    _offline = os.environ.get('OFFLINE', False) == False
+reset_online()

@@ -1,5 +1,6 @@
 import unittest, difflib, texttable, functools, os
 from pghelper import ConnMgr, fetch_results
+from util import assert_online, OfflineError
 from formattedtable import *
 
 __all__ = [
@@ -10,8 +11,6 @@ __all__ = [
     'skip_performance',
 ]
 
-class OfflineError(Exception): pass
-
 def skip_offline(func):
     """
     This decorator is meant for tests.  It will catch OfflineError and issue a skipTest for you.
@@ -19,6 +18,7 @@ def skip_offline(func):
     @functools.wraps(func)
     def wrapper(self):
         try:
+            assert_online()
             retval = func(self)
         except OfflineError:
             self.skipTest("----- OFFLINE TEST -----")
