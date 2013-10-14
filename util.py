@@ -9,6 +9,7 @@ __all__ = [
     'swallow',
     'mkdirp',
     'slurp',
+    'assert_online',
     'is_online',
     'set_online',
     'reset_online',

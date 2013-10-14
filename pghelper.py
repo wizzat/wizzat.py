@@ -167,14 +167,11 @@ class DBTable(object):
         return { field : getattr(self, field) for field in self.fields }
 
     @classmethod
-    def find_by(cls, **kwargs):
+    def find_by(cls, for_update = False, nowait = False, **kwargs):
         """
         Returns rows which match all key/value pairs
         Additionally, accepts for_update = True/False, nowait = True/False
         """
-        for_update = kwargs.pop('for_update', False)
-        nowait = kwargs.pop('nowait', False)
-
         for_update = 'for update' if for_update else ''
         nowait = 'nowait' if nowait else ''
 
