@@ -3,6 +3,7 @@ import datetime, types, calendar
 __all__ = [
     'clear_date_formats',
     'coerce_date',
+    'coerce_day',
     'days',
     'from_epoch',
     'hours',
@@ -22,7 +23,10 @@ __all__ = [
     'to_second',
     'to_week',
     'to_year',
+    'today',
+    'ushort_days',
     'weeks',
+    'yesterday',
 ]
 
 _now = None
@@ -48,6 +52,16 @@ def reset_now():
     set_now(None)
     set_now(now())
 
+def today():
+    return to_day(now())
+
+def yesterday():
+    return to_day(now()) - days(1)
+
+epoch_day = datetime.date(1970, 1, 1)
+def ushort_days(dt):
+    global epoch_day
+    return (coerce_day(dt) - epoch_day).days
 
 _date_formats = []
 def clear_date_formats():
@@ -78,12 +92,31 @@ def parse_date(dt):
             pass
     raise ValueError("Unable to parse date ({}) with any format ({})".format(dt, _date_formats))
 
+def coerce_day(dt):
+    """
+    Coerces a value into a datetime.date
+    """
+    if isinstance(dt, datetime.datetime):
+        return dt.date()
+    elif isinstance(dt, datetime.date):
+        return dt
+    elif isinstance(dt, types.NoneType):
+        return dt
+    elif isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
+        return from_epoch(dt).date()
+    elif isinstance(dt, str) or isinstance(dt, unicode):
+        return parse_date(dt).date()
+    else:
+        return datetime.date(dt)
+
 def coerce_date(dt):
     """
     Coerces a value into a datetime.datetime
     """
     if isinstance(dt, datetime.datetime):
         return dt
+    elif isinstance(dt, datetime.date):
+        return datetime.datetime(date.year, date.month, date.day)
     elif isinstance(dt, types.NoneType):
         return dt
     elif isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
