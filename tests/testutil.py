@@ -1,7 +1,7 @@
 from testcase import PyUtilTestCase
 from pyutil.testutil import *
 from pyutil.util import *
-import datetime, time
+import datetime, time, os
 
 class TestUtil(PyUtilTestCase):
     def test_import_class(self):
@@ -31,6 +31,38 @@ class TestUtil(PyUtilTestCase):
         swallow(ValueError, throw_ValueError, 1)
         swallow(IndexError, throw_IndexError)
         swallow(IndexError, normal_func)
+
+    def test_update_env(self):
+        self.assertTrue('ABRA' not in os.environ)
+        self.assertTrue('CAD' not in os.environ)
+        self.assertTrue('PWD' in os.environ)
+
+        with update_env(ABRA = 'abc', CAD = 'def', PWD='bar'):
+            self.assertEqual(os.environ['ABRA'], 'abc')
+            self.assertEqual(os.environ['CAD'], 'def')
+            self.assertEqual(os.environ['PWD'], 'bar')
+
+        self.assertTrue('ABRA' not in os.environ)
+        self.assertTrue('CAD' not in os.environ)
+        self.assertNotEqual(os.environ['PWD'], 'bar')
+
+    def test_tmpdir(self):
+        with tmpdir() as d:
+            self.assertTrue(os.path.exists(d))
+            self.assertTrue(os.path.isdir(d))
+
+        self.assertFalse(os.path.exists(d))
+
+    def test_invert_dict(self):
+        self.assertEqual(invert_dict({ 1 : 2, 2 : 2, 3 : 2 }, many=True), { 2 : [ 1, 2, 3 ] })
+        self.assertEqual(invert_dict({ 1 : 2, 3 : 4 }), { 2 : 1, 4 : 3 })
+
+        # Undefined behavior from invert_dict when multiple keys point to same value and many=False
+        self.assertTrue(invert_dict({ 1 : 2, 2 : 2, 3 : 2 }) in [
+            { 2 : 1 },
+            { 2 : 2 },
+            { 2 : 3 },
+        ])
 
     def test_merge_dicts(self):
         merged = merge_dicts(

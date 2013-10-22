@@ -1,23 +1,129 @@
-import sys, inspect, errno, os
+import sys, inspect, errno, os, contextlib, tempfile, shutil, collections
 
 __all__ = [
+    'assert_online',
     'carp',
+    'chdir',
     'chunks',
     'import_class',
-    'merge_dicts',
-    'set_defaults',
-    'swallow',
-    'mkdirp',
-    'slurp',
-    'assert_online',
+    'invert_dict',
     'is_online',
-    'set_online',
+    'merge_dicts',
+    'mkdirp',
     'reset_online',
+    'set_defaults',
+    'set_online',
+    'slurp',
+    'swallow',
+    'tmpdir',
+    'umask',
+    'update_env',
 ]
+
+@contextlib.contextmanager
+def update_env(**kwargs):
+    """
+        Temporarily update os.environ for the duration of the context.
+
+        Modified from from https://github.com/bennoleslie/pyutil
+    """
+    purge_values = [ k for k in kwargs if k not in os.environ.keys() ]
+    orig_values = { k : os.environ[k] for k in kwargs if k in os.environ }
+    os.environ.update(kwargs)
+
+    yield
+
+    os.environ.update(orig_values)
+    for k in purge_values:
+        os.environ.pop(k)
+
+@contextlib.contextmanager
+def tmpdir(*args, **kwargs):
+    """
+        Call tempfile.mkdtemp and remove the temp dir after the context.
+
+        Modified from from https://github.com/bennoleslie/pyutil
+    """
+    tmpdir = tempfile.mkdtemp(*args, **kwargs)
+    yield tmpdir
+    shutil.rmtree(tmpdir)
+
+@contextlib.contextmanager
+def umask(new_mask):
+    """
+        unmask context manager.
+
+        Makes `new_mask` the current mask, and restores the previous umask
+        after the context closes.
+
+        Modified from from https://github.com/bennoleslie/pyutil
+    """
+
+    prev_mask = os.umask(new_mask)
+    yield
+    os.umask(prev_mask)
+
+@contextlib.contextmanager
+def chdir(new_path):
+    """
+        Current-working directory context manager.
+
+        Makes the current working directory the specified `path` for the
+        duration of the context.
+
+        Example:
+
+        with chdir("newdir"):
+            # Do stuff in the new directory
+            pass
+
+        Modified from from https://github.com/bennoleslie/pyutil
+    """
+
+    cwd = os.cwd()
+    os.chdir(new_path)
+    yield
+    os.chdir(cwd)
+
+def invert_dict(d, many = False):
+    """
+        Returns the inversion of keys and values in dictionary d. The default case
+        allows overriding of values pointed to by multiple keys.  Passing many=True
+        will make each value a key for the list of values pointing to it.
+
+        Examples:
+        invert_dict({ 1 : 2, 3 : 4 })
+        { 2 : 1, 4 : 3 }
+
+        invert_dict({ 1 : 2, 2 : 2, 3 : 2 })
+        { 2 : 3 }
+
+        invert_dict({ 1 : 2, 2 : 2, 3 : 2 }, many=True)
+        { 2 : [ 1, 2, 3 ] }
+    """
+    if not many:
+        return { v : k for k, v in d.iteritems() }
+
+    output = collections.defaultdict(list)
+
+    for k, v in d.iteritems():
+        output[v].append(k)
+
+    return dict(output)
+
+def touch(path):
+    """
+        Ensures that a specified file (and directory path) exists.
+
+        Analogous to mkdir -p && touch
+    """
+    mkdirp(os.path.dirname(path))
+    with open(path, 'a') as fp:
+        pass
 
 def mkdirp(path):
     """
-        Ensure that directory :path exists.
+        Ensure that directory path exists.
         Analogous to mkdir -p
 
         See http://stackoverflow.com/questions/10539823/python-os-makedirs-to-recreate-path
@@ -49,7 +155,6 @@ def swallow(err_type, func, *args, **kwargs):
             dictionary[x]
         except KeyError:
             pass
-
     """
     try:
         return func(*args, **kwargs)
