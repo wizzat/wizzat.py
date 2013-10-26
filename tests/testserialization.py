@@ -1,9 +1,8 @@
-from testcase import PyUtilTestCase
 from pyutil.serialization import *
 from pyutil.testutil import *
 import random, zlib, struct
 
-class TestIntSet(PyUtilTestCase):
+class TestIntSet(TestCase):
     def test_write_int_set(self):
         self.assertEqual(write_int_set(set()), '\x00\x00\x00\x00')
         self.assertEqual(write_int_set({ 1, 2, 3 }, False), ''.join([
@@ -55,7 +54,7 @@ class TestIntSet(PyUtilTestCase):
             self.assertEqual(read_int_set(write_int_set(s, False), False), s)
             self.assertEqual(read_int_set(write_int_set(s, True), True), s)
 
-class TestPackIterable(PyUtilTestCase):
+class TestPackIterable(TestCase):
     def test_pack_iterable(self):
         self.assertEqual(pack_iterable([ 1, 2, 3, 3], 'H', False), ''.join([
             '\x01\x00', # 1

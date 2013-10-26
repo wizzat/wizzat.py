@@ -1,10 +1,9 @@
-from testcase import PyUtilTestCase
 from pyutil.testutil import *
 from pyutil.runner import *
 from pyutil.util import *
 import datetime, time, os, uuid, logging
 
-class TestRunnerBase(PyUtilTestCase):
+class TestRunnerBase(TestCase):
     def test_basic(self):
         class TestRunner(RunnerBase):
             def _run(self):

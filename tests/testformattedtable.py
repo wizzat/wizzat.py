@@ -1,7 +1,7 @@
-from testcase import PyUtilTestCase
+from pyutil.testutil import *
 from pyutil.formattedtable import *
 
-class FormattedTableTest(PyUtilTestCase):
+class FormattedTableTest(TestCase):
     def test_grid(self):
         values = [
             [ "header1", "header2", "header3", ],

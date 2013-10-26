@@ -1,8 +1,8 @@
-from testcase import PyUtilTestCase
+from pyutil.testutil import *
 from pyutil import pghelper
 import psycopg2
 
-class PgHelperTest(PyUtilTestCase):
+class PgHelperTest(TestCase):
     db_info = {
         'host'     : 'localhost',
         'port'     : 5432,

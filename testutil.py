@@ -5,6 +5,7 @@ from formattedtable import *
 
 __all__ = [
     'AssertSQLMixin',
+    'TestCase',
     'OfflineError',
     'skip_offline',
     'skip_unfinished',
@@ -49,6 +50,7 @@ def skip_unfinished(func):
         self.skipTest("----- UNFINISHED TEST -----")
     return wrapper
 
+###
 
 class AssertSQLMixin(object):
     """
@@ -67,8 +69,9 @@ class AssertSQLMixin(object):
                 mgr.closeall()
 
         # Now tear ours down and put it back
-        self.mgr.rollback()
-        ConnMgr.all_mgrs.append(self.mgr)
+        if self.mgr:
+            self.mgr.rollback()
+            ConnMgr.all_mgrs.append(self.mgr)
 
     def assertSqlResults(self, conn, sql, *rows):
         header, rows = rows[0], rows[1:]
@@ -83,3 +86,28 @@ class AssertSQLMixin(object):
                 sql = sql,
                 diff = '\n'.join(diff),
             ))
+
+class TestCase(AssertSQLMixin, unittest.TestCase):
+    # This can be (and perhaps should be?) overridden in subclasses
+    setup_database = False
+    db_info = {
+        'host'     : 'localhost',
+        'port'     : 5432,
+        'user'     : 'pyutil',
+        'password' : 'pyutil',
+        'database' : 'pyutil_testdb',
+        'minconn'  : 0,
+        'maxconn'  : 2,
+    }
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+        self.mgr  = None
+        self.conn = None
+
+        if self.setup_database:
+            self.setup_connections()
+
+    def tearDown(self):
+        super(TestCase, self).tearDown()
+        self.teardown_connections()

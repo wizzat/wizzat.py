@@ -1,4 +1,3 @@
-from testcase import PyUtilTestCase
 from pyutil.pghelper import *
 from pyutil.testutil import *
 from pyutil.util import *
@@ -24,7 +23,9 @@ class BarTable(DBTable):
         'c',
     )
 
-class DBTableTest(AssertSQLMixin, PyUtilTestCase):
+class DBTableTest(TestCase):
+    setup_database = True
+
     def setUp(self):
         super(DBTableTest, self).setUp()
         FooTable.conn = self.conn

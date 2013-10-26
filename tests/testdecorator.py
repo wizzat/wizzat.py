@@ -1,8 +1,8 @@
 from pyutil.decorators import *
-from testcase import PyUtilTestCase
+from pyutil.testutil   import *
 import time
 
-class MemoizeTest(PyUtilTestCase):
+class MemoizeTest(TestCase):
     options = {
         'stats'        : (False, True),
         'kw'           : (False, True),

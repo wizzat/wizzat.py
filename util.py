@@ -1,4 +1,4 @@
-import sys, inspect, errno, os, contextlib, tempfile, shutil, collections
+import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types
 
 __all__ = [
     'assert_online',
@@ -18,6 +18,7 @@ __all__ = [
     'tmpdir',
     'umask',
     'update_env',
+    'funcs',
 ]
 
 @contextlib.contextmanager
@@ -244,6 +245,16 @@ def slurp(filename):
     """
     with open(filename, 'r') as fp:
         return fp.read()
+
+def funcs(obj):
+    """
+    Returns the functions on object (or, callables)
+    """
+    try:
+        return [ y for x,y in obj.__dict__.iteritems() if isinstance(y, (types.FunctionType, classmethod)) ]
+    except (TypeError, AttributeError), e:
+        print e
+        return []
 
 class OfflineError(Exception): pass
 

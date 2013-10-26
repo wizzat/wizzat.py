@@ -1,27 +1,29 @@
-try:
-    from psycopg2cffi import compat
-    compat.register()
-except ImportError:
-    pass
+#try:
+#    from psycopg2cffi import compat
+#    compat.register()
+#except ImportError:
+#    pass
 
-import psycopg2
-import psycopg2.extras
-import psycopg2.pool
+import tempfile, cStringIO
+import psycopg2, psycopg2.extras, psycopg2.pool
 from types import *
 
 __all__ = [
+    #'vacuum',
+    'ConnMgr',
+    'DBTable',
+    'analyze',
+    'copy_from',
+    'copy_from_rows',
+    'currval',
     'execute',
-    'iter_results',
     'fetch_results',
-    'set_sql_log_func',
+    'iter_results',
+    'nextval',
     'relation_info',
+    'set_sql_log_func',
     'table_exists',
     'view_exists',
-    #'vacuum',
-    'currval',
-    'nextval',
-    'DBTable',
-    'ConnMgr',
 ]
 
 _log_func = None
@@ -78,16 +80,21 @@ def fetch_results(conn, sql, **bind_params):
             bound_sql = cur.mogrify(sql, bind_params)
             _log_func(bound_sql)
 
-        try:
-            cur.execute(sql, bind_params)
-        except psycopg2.ProgrammingError:
-            print cur.mogrify(sql, bind_params)
-            raise
+        cur.execute(sql, bind_params)
         return cur.fetchall()
 
 def copy_from(conn, fp, table_name, columns = None):
     fp.seek(0)
     conn.cursor().copy_from(fp, table_name, columns = columns)
+
+def copy_from_rows(conn, table_name, columns, rows):
+    fp = cStringIO.StringIO()
+    for row in rows:
+        fp.write('\t'.join(row))
+        fp.write('\n')
+
+    copy_from(conn, fp, table_name, columns = columns)
+    del fp
 
 def relation_info(conn, relname, relkind = 'r'):
     """
@@ -114,6 +121,9 @@ def view_exists(conn, view_name):
     Determine whether a view exists in the current database
     """
     return len(relation_info(conn, view_name, 'v')) > 0
+
+def analyze(conn, table_name):
+    execute(conn, "analyze {}".format(table_name))
 
 def vacuum(conn, table_name):
     raise NotImplemented()

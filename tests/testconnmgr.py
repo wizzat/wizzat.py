@@ -1,20 +1,7 @@
-try:
-    from psycopg2cffi import compat
-    compat.register()
-except ImportError:
-    pass
-
-import psycopg2
+from pyutil.testutil import *
 from pyutil import pghelper
-from testcase import PyUtilTestCase
 
-class ConnMgrTest(PyUtilTestCase):
-    def tearDown(self):
-        super(ConnMgrTest, self).tearDown()
-
-        while pghelper.ConnMgr.all_mgrs:
-            pghelper.ConnMgr.all_mgrs.pop().closeall()
-
+class ConnMgrTest(TestCase):
     def test_creation(self):
         mgr = pghelper.ConnMgr(**self.db_info)
         self.assertEqual(mgr.connections, {})
@@ -87,6 +74,7 @@ class ConnMgrTest(PyUtilTestCase):
         mgr.getconn("a")
         mgr.getconn("b")
 
+        import psycopg2
         with self.assertRaises(psycopg2.pool.PoolError):
             mgr.getconn("c")
 

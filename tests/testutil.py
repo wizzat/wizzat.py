@@ -1,9 +1,8 @@
-from testcase import PyUtilTestCase
 from pyutil.testutil import *
 from pyutil.util import *
 import datetime, time, os
 
-class TestUtil(PyUtilTestCase):
+class TestUtil(TestCase):
     def test_import_class(self):
         ospath = import_class('os.path')
         self.assertEqual(ospath.join('a', 'b', 'c'), 'a/b/c')
