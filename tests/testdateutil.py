@@ -8,6 +8,7 @@ class TestDateUtil(TestCase):
         self.assertEqual(to_epoch(datetime.datetime(2013, 9, 9, 15, 52, 19)), 1378741939)
 
     def test_now_can_be_set_and_reset(self):
+        set_now(None)
         t1 = now()
         time.sleep(0.1)
         t2 = now()
@@ -29,7 +30,47 @@ class TestDateUtil(TestCase):
 
     def test_coerce_date(self):
         self.assertEqual(coerce_date(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
+        self.assertEqual(coerce_date(1378741939.0), datetime.datetime(2013, 9, 9, 15, 52, 19))
         self.assertEqual(coerce_date(datetime.datetime(2013, 9, 9, 15, 52, 19)), datetime.datetime(2013, 9, 9, 15, 52, 19))
+        self.assertEqual(coerce_date(datetime.date(2013, 9, 9)), datetime.datetime(2013, 9, 9))
+
+    def test_coerce_date_types(self):
+        types = [
+            0,
+            0l,
+            0.0,
+            datetime.datetime.utcnow(),
+            datetime.date.today(),
+            "2013-03-03 00:01:02",
+        ]
+
+        for t in types:
+            self.assertEqual(type(coerce_date(t)), datetime.datetime)
+
+    def test_coerce_day_types(self):
+        types = [
+            0,
+            0l,
+            0.0,
+            datetime.datetime.utcnow(),
+            datetime.date.today(),
+            "2013-03-03 00:01:02",
+        ]
+
+        for t in types:
+            self.assertEqual(type(coerce_day(t)), datetime.date)
+
+    def test_ushort_to_day(self):
+        self.assertEqual(ushort_to_day(0), datetime.date(1970, 1, 1))
+        self.assertEqual(ushort_to_day(10000), datetime.date(1970, 1, 1) + days(10000))
+        self.assertEqual(ushort_to_day(65535), datetime.date(1970, 1, 1) + days(65535))
+        self.assertEqual(ushort_to_day(65535*2), datetime.date(1970, 1, 1) + days(65535*2))
+
+    def test_day_to_ushort(self):
+        self.assertEqual(0,       day_to_ushort(datetime.date(1970, 1, 1)))
+        self.assertEqual(10000,   day_to_ushort(datetime.date(1970, 1, 1) + days(10000)))
+        self.assertEqual(65535,   day_to_ushort(datetime.date(1970, 1, 1) + days(65535)))
+        self.assertEqual(65535*2, day_to_ushort(datetime.date(1970, 1, 1) + days(65535*2)))
 
     def test_coerce_date__string_formatting(self):
         register_date_format("%Y-%m-%d %H:%M:%S")

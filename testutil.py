@@ -1,6 +1,7 @@
 import unittest, difflib, texttable, functools, os
 from pghelper import ConnMgr, fetch_results
 from util import assert_online, OfflineError
+from dateutil import reset_now
 from formattedtable import *
 
 __all__ = [
@@ -102,6 +103,7 @@ class TestCase(AssertSQLMixin, unittest.TestCase):
 
     def setUp(self):
         super(TestCase, self).setUp()
+        reset_now()
         self.mgr  = None
         self.conn = None
 

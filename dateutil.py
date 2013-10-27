@@ -24,7 +24,8 @@ __all__ = [
     'to_week',
     'to_year',
     'today',
-    'ushort_days',
+    'ushort_to_day',
+    'day_to_ushort',
     'weeks',
     'yesterday',
 ]
@@ -52,17 +53,24 @@ def reset_now():
     set_now(None)
     set_now(now())
 
+# Day Utils
 def today():
-    return to_day(now())
+    return coerce_day(now())
 
 def yesterday():
-    return to_day(now()) - days(1)
+    return today() - days(1)
 
 epoch_day = datetime.date(1970, 1, 1)
-def ushort_days(dt):
+def day_to_ushort(dt):
     global epoch_day
     return (coerce_day(dt) - epoch_day).days
 
+def ushort_to_day(intval):
+    global epoch_day
+    return epoch_day + days(intval)
+
+
+# Datetime Utils
 _date_formats = []
 def clear_date_formats():
     """
@@ -76,7 +84,9 @@ def register_date_format(str_format):
     Registers a date format to be attempted via strptime for parse_date and coerce_date
     """
     global _date_formats
-    _date_formats.append(str_format)
+    # Yes, this could be a set but I am interested in order.
+    if str_format not in _date_formats:
+        _date_formats.append(str_format)
 
 def parse_date(dt):
     """
@@ -116,12 +126,12 @@ def coerce_date(dt):
     if isinstance(dt, datetime.datetime):
         return dt
     elif isinstance(dt, datetime.date):
-        return datetime.datetime(date.year, date.month, date.day)
+        return datetime.datetime(dt.year, dt.month, dt.day)
     elif isinstance(dt, types.NoneType):
         return dt
-    elif isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
+    elif isinstance(dt, (int, long, float)):
         return from_epoch(dt)
-    elif isinstance(dt, str) or isinstance(dt, unicode):
+    elif isinstance(dt, (str, unicode)):
         return parse_date(dt)
     else:
         return datetime.datetime(dt)
@@ -138,8 +148,7 @@ def to_epoch(dt):
     """
     if isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
         return dt
-    if isinstance(dt, datetime.datetime):
-        return calendar.timegm(dt.timetuple())
+    return calendar.timegm(coerce_date(dt).timetuple())
 
 def to_second(dt):
     """

@@ -16,12 +16,14 @@ __all__ = [
     'copy_from',
     'copy_from_rows',
     'currval',
+    'drop_table',
     'execute',
     'fetch_results',
     'iter_results',
     'nextval',
     'relation_info',
     'set_sql_log_func',
+    'table_columns',
     'table_exists',
     'view_exists',
 ]
@@ -109,6 +111,25 @@ def relation_info(conn, relname, relkind = 'r'):
         relname = relname,
         relkind = relkind,
     )
+
+def table_columns(conn, table_name):
+    """
+    Gets the column names and data types for the table
+    """
+    return fetch_results(conn, """
+        SELECT
+            column_name,
+            data_type
+        FROM information_schema.columns
+        WHERE table_name = %(table)s
+        ORDER BY column_name, data_type
+    """, table = table_name)
+
+def drop_table(conn, table_name):
+    """
+    Drops a table
+    """
+    execute(conn, "drop table if exists {}".format(table_name))
 
 def table_exists(conn, table_name):
     """
