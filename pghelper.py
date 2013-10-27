@@ -1,8 +1,8 @@
-#try:
-#    from psycopg2cffi import compat
-#    compat.register()
-#except ImportError:
-#    pass
+try:
+    from psycopg2cffi import compat
+    compat.register()
+except ImportError:
+    pass
 
 import tempfile, cStringIO
 import psycopg2, psycopg2.extras, psycopg2.pool
