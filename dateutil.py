@@ -28,6 +28,10 @@ __all__ = [
     'day_to_ushort',
     'weeks',
     'yesterday',
+    'format_hour',
+    'format_day',
+    'format_week',
+    'format_month',
 ]
 
 _now = None
@@ -62,35 +66,81 @@ def yesterday():
 
 epoch_day = datetime.date(1970, 1, 1)
 def day_to_ushort(dt):
+    """
+    Converts a datetime.date or datetime.datetime object to the number of days since Jan 1 1970
+    """
     global epoch_day
     return (coerce_day(dt) - epoch_day).days
 
 def ushort_to_day(intval):
+    """
+    Conerts a number of days since Jan 1 1970 to a datetime.date
+    """
     global epoch_day
     return epoch_day + days(intval)
 
 
 # Datetime Utils
-_date_formats = []
+_date_formats = [ '%Y-%m-%d %H:%M:%S' ]
 def clear_date_formats():
     """
-    Removes all registered date formats
+    Removes all registered date formats except '%Y-%m-%d %H:%M:%S'
     """
     global _date_formats
-    _date_formats = []
+    _date_formats = [ '%Y-%m-%d %H:%M:%S' ]
 
-def register_date_format(str_format):
+def register_date_format(str_format, append=True):
     """
     Registers a date format to be attempted via strptime for parse_date and coerce_date
+    append=False inserts the date format at the beginning of the list and makes it
+    the default date format.
     """
     global _date_formats
     # Yes, this could be a set but I am interested in order.
     if str_format not in _date_formats:
-        _date_formats.append(str_format)
+        if append:
+            _date_formats.append(str_format)
+        else:
+            _date_formats.insert(0, str_format)
+
+def format_date(dt, fmt = None):
+    """
+    Returns the formatted date.
+    The format is optional and defaults to the first registered date format.
+    """
+    return dt.strftime(fmt or _date_formats[0])
+
+def format_day(dt, fmt = None):
+    """
+    Returns the formatted date truncated to the day.
+    The format is optional and defaults to the first registered date format.
+    """
+    return dt.strftime(fmt or "%Y-%m-%d")
+
+def format_hour(dt, fmt = None):
+    """
+    Returns the formatted date truncated to the month
+    The format is optional and defaults to the first registered date format.
+    """
+    return format_date(to_hour(dt), fmt)
+
+def format_week(dt, fmt = None):
+    """
+    Returns the formatted date truncated to the month
+    The format is optional and defaults to the first registered date format.
+    """
+    return format_day(to_week(dt), fmt)
+
+def format_month(dt, fmt = None):
+    """
+    Returns the formatted date truncated to the month
+    The format is optional and defaults to the first registered date format.
+    """
+    return format_day(to_month(dt), fmt = None)
 
 def parse_date(dt):
     """
-    Iterates through all registerd date formats and returns the first that succeeds
+    Parses the date based on registered date formats.
     """
     global _date_formats
     if isinstance(dt, datetime.datetime):

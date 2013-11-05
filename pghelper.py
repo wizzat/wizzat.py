@@ -176,7 +176,7 @@ def sql_where_from_params(**kwargs):
         clauses.append({
             NoneType : "{0} is null".format(key),
             list     : "{0} in (%({0})s)".format(key),
-            tuple    : "{0} in (%({0})s)".format(key),
+            tuple    : "{0} in %({0})s".format(key),
         }.get(type(value), "{0} = %({0})s".format(key)))
 
     return ' and '.join(clauses)
