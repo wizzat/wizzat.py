@@ -5,6 +5,8 @@ __all__ = [
     'carp',
     'chdir',
     'chunks',
+    'first_existing_path',
+    'funcs',
     'import_class',
     'invert_dict',
     'is_online',
@@ -18,7 +20,6 @@ __all__ = [
     'tmpdir',
     'umask',
     'update_env',
-    'funcs',
 ]
 
 @contextlib.contextmanager
@@ -134,6 +135,18 @@ def mkdirp(path):
     except OSError, e:
         if e.errno != errno.EEXIST:
             raise
+
+def first_existing_path(*paths):
+    """
+        Finds and returns the first existing file path.
+        Calls os.path.expanduser on each path.
+    """
+    for path in paths:
+        if path:
+            path = os.path.expanduser(path)
+            if os.path.exists(path):
+                return path
+    return None
 
 def merge_dicts(*iterable):
     """

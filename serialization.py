@@ -1,12 +1,6 @@
-import collections, struct, cPickle, zlib
-import bitarray, array
+import collections, struct, zlib
 from decorators import *
 from util import chunks
-
-try:
-    import ujson as json
-except ImportError:
-    import json
 
 __all__ = [
     'pack_iterable',

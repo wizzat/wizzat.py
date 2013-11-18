@@ -1,6 +1,6 @@
+import datetime, time, os, uuid
 from pyutil.testutil import *
 from pyutil.util import *
-import datetime, time, os
 
 class TestUtil(TestCase):
     def test_import_class(self):
@@ -62,6 +62,13 @@ class TestUtil(TestCase):
             { 2 : 2 },
             { 2 : 3 },
         ])
+
+    def test_first_existing_path__ignores_paths_that_do_not_exist(self):
+        doesnt_exist1 = str(uuid.uuid4())
+        doesnt_exist2 = str(uuid.uuid4())
+
+        path = first_existing_path(doesnt_exist1, doesnt_exist2, 'testutil.py', 'testdateutil.py')
+        self.assertEqual(path, 'testutil.py')
 
     def test_merge_dicts(self):
         merged = merge_dicts(
