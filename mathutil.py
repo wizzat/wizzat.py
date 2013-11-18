@@ -1,16 +1,43 @@
 import math
 
 __all__ = [
+    'avg',
     'Percentile',
 ]
 
-def avg(values):
-    return 1.0 * sum(values) / len(values)
+def avg(iterable):
+    """
+    Returns the average (mean) of all values in the iterable.
+    """
+    return 1.0 * sum(iterable) / len(iterable)
 
 class Avg(object):
-    pass
+    """
+    Calculates the running average.
+
+    a = Average()
+    for x in iterable:
+        a.add_value(x)
+
+    a.average()
+    """
+    def __init__(self, *values):
+        pass
 
 class Percentile(object):
+    """
+    Logarithmic percentile approximation for non-negative values.
+    Expected variance from actual median is about 5%.
+    Expected memory consumption is ~8kb with constant time calculation.
+
+    p = Percentile()
+    for x in iterable:
+        p.add_value(x)
+
+    p.percentile(0.0) # Min value
+    p.percentile(0.5) # Median
+    p.percentile(1.0) # Max value
+    """
     def __init__(self, *values):
         self.values     = [ 0 ] * 2000
         self.total      = 0
@@ -24,6 +51,9 @@ class Percentile(object):
     def add_value(self, value):
         if value == None:
             return
+
+        if value < 0:
+            raise ValueError()
 
         idx = int(math.log10(value+1) * 100)
 
@@ -42,7 +72,6 @@ class Percentile(object):
 
         target = pct * self.num_values
         ct = 0
-        idx = self.min_idx
 
         for idx in xrange(self.min_idx, self.max_idx+1):
             ct += self.values[idx]
