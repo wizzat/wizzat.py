@@ -254,14 +254,14 @@ def set_defaults(kwargs, defaults = {}, **default_values):
 
 def slurp(filename):
     """
-    Find the named file, read it into memory, and return it as a string.
+        Find the named file, read it into memory, and return it as a string.
     """
     with open(filename, 'r') as fp:
         return fp.read()
 
 def funcs(obj):
     """
-    Returns the functions on object (or, callables)
+        Returns the functions on object (or, callables)
     """
     try:
         return [ y for x,y in obj.__dict__.iteritems() if isinstance(y, (types.FunctionType, classmethod)) ]
@@ -273,8 +273,8 @@ class OfflineError(Exception): pass
 
 def assert_online():
     """
-    This method tests the OFFLINE environment variable and throws OfflineError().  This directly
-    hooks into @skip_offline, but can be used in other situations as well.
+        This method tests the OFFLINE environment variable and throws OfflineError().  This directly
+        hooks into @skip_offline, but can be used in other situations as well.
     """
     if not is_online():
         import testutil
@@ -284,21 +284,21 @@ def assert_online():
 _offline = None
 def is_online():
     """
-    This method tests the OFFLINE environment variable and the global offline state.
+        This method tests the OFFLINE environment variable and the global offline state.
     """
     global _offline
     return _offline
 
 def set_online(value):
     """
-    Sets the global offline state
+        Sets the global offline state
     """
     global _offline
     _offline = value
 
 def reset_online():
     """
-    Resets the global offline state
+        Resets the global offline state
     """
     global _offline
     _offline = os.environ.get('OFFLINE', False) == False

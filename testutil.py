@@ -89,6 +89,11 @@ class AssertSQLMixin(object):
             ))
 
 class TestCase(AssertSQLMixin, unittest.TestCase):
+    """
+    This is a default test case which takes advantage of AssertSQL and setting up connections.
+
+    db_info should be overridden with appropriate database connection information.
+    """
     # This can be (and perhaps should be?) overridden in subclasses
     setup_database = False
     db_info = {

@@ -14,6 +14,9 @@ def structs(code):
     return [ struct.Struct('<{}{}'.format(ct, code)) for ct in xrange(251) ]
 
 def pack_iterable(itr, type_code, compress = False):
+    """
+    This is a wrapper around struct.pack for packing arrays of homogeneous data.
+    """
     l = []
     readers = structs(type_code)
     for chunk in chunks(list(itr), 250):
@@ -23,6 +26,9 @@ def pack_iterable(itr, type_code, compress = False):
     return s if not compress else zlib.compress(s)
 
 def unpack_iterable(s, type_code, compressed = False):
+    """
+    This is a wrapper around struct.unpack for unpacking arrays of homogeneous data.
+    """
     if compressed:
         s = zlib.decompress(s)
 
@@ -41,6 +47,9 @@ def unpack_iterable(s, type_code, compressed = False):
 bmstruct = struct.Struct('<QI')
 istructs = structs('I')
 def write_int_set(itr, compress = False):
+    """
+    This is a space efficient serialization format for integer iterables.
+    """
     parts   = collections.defaultdict(int)
     buckets = collections.defaultdict(list)
 
@@ -63,6 +72,9 @@ def write_int_set(itr, compress = False):
     return s if not compress else zlib.compress(s)
 
 def read_int_set(s, compressed = False):
+    """
+    This is a space efficient serialization format for integer iterables.
+    """
     if compressed:
         s = zlib.decompress(s)
     output_set = set()

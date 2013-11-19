@@ -59,9 +59,15 @@ def reset_now():
 
 # Day Utils
 def today():
+    """
+    Returns today as a datetime.date (possibly adjusted for set_now)
+    """
     return coerce_day(now())
 
 def yesterday():
+    """
+    Returns yesterday as a datetime.date (possibly adjusted for set_now)
+    """
     return today() - days(1)
 
 epoch_day = datetime.date(1970, 1, 1)

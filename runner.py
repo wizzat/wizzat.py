@@ -6,6 +6,13 @@ __all__ = [
 ]
 
 class RunnerBase(object):
+    """
+        This is a base class for runners.  It supports:
+        - Setting up logging
+        - Resetting logging for tests
+        - Signal handling
+        - Hooks for common operations like setup_connections or should_run
+    """
     log_root = '/mnt/logs'
     process_name = None
     sig_handlers = {
@@ -26,6 +33,9 @@ class RunnerBase(object):
             signal.signal(sig, getattr(self, func))
 
     def run(self):
+        """
+        This method provides should_run() and automatic exception handling/logging.
+        """
         if not self.should_run():
             return
 
@@ -37,9 +47,15 @@ class RunnerBase(object):
             raise
 
     def setup_connections(self):
+        """
+        Stub for overriding.  Called during init()
+        """
         pass
 
     def should_run(self):
+        """
+        Stub for overriding.  Called before _run()
+        """
         return True
 
     def setup_logging(self):

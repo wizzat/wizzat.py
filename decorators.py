@@ -50,6 +50,10 @@ class MemoizeResults(object):
 
     @classmethod
     def cache_size(cls, stats):
+        """
+            Returns the cache size for native python objects.
+            Does not work on Pypy.
+        """
         # Pypy compatibility
         try:
             return sys.getsizeof(stats.cache)
@@ -58,6 +62,19 @@ class MemoizeResults(object):
 
     @classmethod
     def format_stats(cls):
+        """
+            Calculates the statistics for all memoized() things.
+            Returns a text table formatted string containing:
+            - Function name
+            - Calls
+            - Hits
+            - Misses
+            - Nulls
+            - Miss Time
+            - Max Time Saved
+            - Cache Items
+            - Cache Size
+        """
         import texttable
         table = texttable.Texttable(0)
         table.header([
@@ -95,6 +112,19 @@ class MemoizeResults(object):
 
     @classmethod
     def format_csv(cls):
+        """
+            Calculates the statistics for all memoized() things.
+            Returns a csv formatted string containing:
+            - Function name
+            - Calls
+            - Hits
+            - Misses
+            - Nulls
+            - Miss Time
+            - Max Time Saved
+            - Cache Items
+            - Cache Size
+        """
         fp = StringIO.StringIO()
         fp.write(",".join([
             'Function Name',
@@ -301,6 +331,21 @@ def memoize(until = None, kw = None, ignore_nulls = None, stats = None, verbose 
     return wrap
 
 class BenchResults(object):
+    """
+        Acts as a storage container for all benchmark results.
+
+        Expected usage:
+
+        @benchmark
+        def foo():
+            print 'called foo!'
+
+        for x in xrange(100):
+            foo()
+
+        print BenchResults().format_stats() # Text table pretty
+        print BenchResults().format_csv() # For CSV
+    """
     results = {}
 
     @classmethod
@@ -348,6 +393,11 @@ class BenchResults(object):
             stats[2] = 0
 
 def benchmark(obj):
+    """
+        Decorator for capturing function call duration and number of calls.
+
+        Works with BenchResults for display purposes.
+    """
     bench_results = obj.bench_results = BenchResults.results[obj] = [ str(obj), 0, 0]
 
     @functools.wraps(obj)

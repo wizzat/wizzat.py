@@ -86,10 +86,16 @@ def fetch_results(conn, sql, **bind_params):
         return cur.fetchall()
 
 def copy_from(conn, fp, table_name, columns = None):
+    """
+    Resets the file pointer and initiates a pg_copy.
+    """
     fp.seek(0)
     conn.cursor().copy_from(fp, table_name, columns = columns)
 
 def copy_from_rows(conn, table_name, columns, rows):
+    """
+    Creates a file object containing the tab separated rows.
+    """
     fp = cStringIO.StringIO()
     for row in rows:
         fp.write('\t'.join(row))
@@ -144,9 +150,15 @@ def view_exists(conn, view_name):
     return len(relation_info(conn, view_name, 'v')) > 0
 
 def analyze(conn, table_name):
+    """
+    Analyzes a table
+    """
     execute(conn, "analyze {}".format(table_name))
 
 def vacuum(conn, table_name):
+    """
+    Vacuums a table
+    """
     raise NotImplemented()
 
 def currval(conn, sequence):
@@ -237,6 +249,9 @@ class DBTable(object):
         return self
 
     def update(self):
+        """
+        Ensures the row exists is serialized to the database
+        """
         if self.db_fields:
             return self._update()
         else:
@@ -301,6 +316,9 @@ class DBTable(object):
         return self
 
     def delete(self):
+        """
+        Deletes row(s) in the database that share all fields with the current row, and returns those rows.
+        """
         if not self.db_fields:
             return []
 
@@ -326,6 +344,36 @@ class DBTable(object):
         self.conn.rollback()
 
 class ConnMgr(object):
+    """
+    A PostgreSQL connection manager supporting 'named connections' and connection pooling.
+
+    Example:
+        m = ConnMgr(
+            **db_conn_info
+            minconn = 0,
+            maxconn = 5,
+        )
+
+        conn1 = m.conn
+        conn2 = m.iterconn
+        conn3 = m.lockconn
+        conn4 = m.fooconn
+        conn5 = m.abcconn
+        conn6 = m.defconn # This will hang
+        m.putconn('abcconn')
+        # Conn6 now unblocks
+
+    Another pattern of use:
+        m = ConnMgr.default_from_info(**config)
+        conn1 = m.conn
+
+        m = ConnMgr.default_from_info(**config)
+        conn2 = m.conn
+        conn3 = m.conn2
+
+        conn1 == conn2
+        conn2 != conn3
+    """
     all_mgrs = []
     def __init__(self, **conn_info):
         self.conn_info = conn_info
