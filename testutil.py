@@ -75,6 +75,22 @@ class AssertSQLMixin(object):
             ConnMgr.all_mgrs.append(self.mgr)
 
     def assertSqlResults(self, conn, sql, *rows):
+        """
+            Example:
+
+            self.assertSqlResults(self.db_conn, '''
+                select *
+                from some_table
+                order by logdate
+            ''',
+                [ 'logdate',  'col1',  'col2',  'metadata',  ],
+                [ time1,      'abc1',  'def',   1,           ],
+                [ time1,      'abc1',  'def',   1,           ],
+                [ time2,      'abc2',  'def',   1,           ],
+                [ time3,      'abc1',  'def',   1,           ],
+            )
+
+        """
         header, rows = rows[0], rows[1:]
         results = fetch_results(conn, sql)
 
