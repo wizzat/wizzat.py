@@ -51,8 +51,12 @@ class DBTableMixin(object):
             session.add(instance)
             return instance
 
+_maker = None
 def get_session():
-    return sessionmaker(bind=get_engine())
+    global _maker
+    if not _maker:
+        _maker = sessionmaker(bind=get_engine())
+    return _maker()
 
 _default_session = None
 def default_session():
