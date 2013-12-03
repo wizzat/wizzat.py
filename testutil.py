@@ -11,7 +11,13 @@ __all__ = [
     'skip_offline',
     'skip_unfinished',
     'skip_performance',
+    'expected_failure',
+    'expectedFailure',
 ]
+
+
+expected_failure = unittest.expectedFailure
+expectedFailure = unittest.expectedFailure
 
 def skip_offline(func):
     """

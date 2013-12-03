@@ -1,4 +1,4 @@
-import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types
+import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, json, ConfigParser
 
 __all__ = [
     'assert_online',
@@ -10,6 +10,7 @@ __all__ = [
     'import_class',
     'invert_dict',
     'is_online',
+    'load_json_paths',
     'merge_dicts',
     'mkdirp',
     'reset_online',
@@ -147,6 +148,49 @@ def first_existing_path(*paths):
             if os.path.exists(path):
                 return path
     return None
+
+def load_json_paths(*paths):
+    """
+        JSON parses the first existing path.  This is generally intended to be used as follows:
+
+        from pyutil.decorators import memoize
+
+        @memoize()
+        def get_config():
+            return load_json_paths(
+                "~/prod_app_config",
+                "~/dev_app_config",
+                "~/test_app_config",
+            )
+    """
+    path = first_existing_path(*paths)
+    if not path:
+        raise ValueError()
+
+    with open(path, 'r') as fp:
+        return json.load(fp)
+
+def load_config_paths(*paths):
+    """
+        ConfigParser.read()s the first existing path.  This is generally intended to be used as follows:
+
+        from pyutil.decorators import memoize
+
+        @memoize()
+        def get_config():
+            return load_configparser_paths(
+                "~/prod_app_config",
+                "~/dev_app_config",
+                "~/test_app_config",
+            )
+
+    """
+    path = first_existing_path(*paths)
+    if not path:
+        raise ValueError()
+
+    with open(first_existing_path(*paths), 'r') as fp:
+        return ConfigParser.SafeConfigParser.readfp(fp)
 
 def merge_dicts(*iterable):
     """
