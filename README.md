@@ -11,6 +11,7 @@ Python Utilities includes an assortment of decorators, utility methods, and util
 - The _testutil_ module contains several decorators for manipulating tests as well as mixins for getting various test behavior.
 - The _mathutil_ module contains various math utilites as well as logarithmic percentile approximation and running average.
 - The _runner_ module contains a base class that handles much of the common boilerplate in setting up runners.
+- The _sqlutil_ module contains a series of utility classes for sqlalchemy
 
 The most interesting functions are likely:
 - decorators.memoize()

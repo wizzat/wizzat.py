@@ -13,6 +13,8 @@ __all__ = [
     'set_config',
 ]
 
+# This doesn't currently work
+
 class DBTableMixin(object):
     """
     Utility mixin for SQLAlchemy
