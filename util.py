@@ -54,7 +54,7 @@ def tmpdir(*args, **kwargs):
 @contextlib.contextmanager
 def umask(new_mask):
     """
-        unmask context manager.
+        umask context manager.
 
         Makes `new_mask` the current mask, and restores the previous umask
         after the context closes.

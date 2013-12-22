@@ -4,8 +4,17 @@ import datetime, time
 
 class TestDateUtil(TestCase):
     def test_epoch_handling(self):
-        self.assertEqual(from_epoch(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
-        self.assertEqual(to_epoch(datetime.datetime(2013, 9, 9, 15, 52, 19)), 1378741939)
+        with set_millis_ctx(False):
+            self.assertEqual(from_epoch(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
+            self.assertEqual(to_epoch(datetime.datetime(2013, 9, 9, 15, 52, 19)), 1378741939)
+            self.assertEqual(coerce_date(1378741939), datetime.datetime(2013, 9, 9, 15, 52, 19))
+            self.assertEqual(coerce_day(1378741939), datetime.date(2013, 9, 9))
+
+        with set_millis_ctx(True):
+            self.assertEqual(from_epoch_millis(1378741939000), datetime.datetime(2013, 9, 9, 15, 52, 19))
+            self.assertEqual(to_epoch_millis(datetime.datetime(2013, 9, 9, 15, 52, 19)), 1378741939000)
+            self.assertEqual(coerce_date(1378741939000), datetime.datetime(2013, 9, 9, 15, 52, 19))
+            self.assertEqual(coerce_day(1378741939000), datetime.date(2013, 9, 9))
 
     def test_now_can_be_set_and_reset(self):
         set_now(None)

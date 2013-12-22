@@ -1,4 +1,4 @@
-import datetime, types, calendar
+import datetime, types, calendar, contextlib
 
 __all__ = [
     'clear_date_formats',
@@ -11,6 +11,7 @@ __all__ = [
     'format_month',
     'format_week',
     'from_epoch',
+    'from_epoch_millis',
     'hours',
     'intervals',
     'minutes',
@@ -19,9 +20,12 @@ __all__ = [
     'register_date_format',
     'reset_now',
     'seconds',
+    'set_millis',
+    'set_millis_ctx',
     'set_now',
     'to_day',
     'to_epoch',
+    'to_epoch_millis',
     'to_hour',
     'to_minute',
     'to_month',
@@ -57,6 +61,19 @@ def reset_now():
     """
     set_now(None)
     set_now(now())
+
+_millis = False
+def set_millis(value):
+    global _millis
+    _millis = value
+
+@contextlib.contextmanager
+def set_millis_ctx(value):
+    global _millis
+    prev_millis = _millis
+    _millis = value
+    yield
+    _millis = prev_millis
 
 # Day Utils
 def today():
@@ -163,15 +180,18 @@ def coerce_day(dt):
     """
     Coerces a value into a datetime.date
     """
+    global _millis
     if isinstance(dt, datetime.datetime):
         return dt.date()
     elif isinstance(dt, datetime.date):
         return dt
     elif isinstance(dt, types.NoneType):
         return dt
-    elif isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
+    elif isinstance(dt, (int, long, float)) and _millis:
+        return from_epoch_millis(dt).date()
+    elif isinstance(dt, (int, long, float)):
         return from_epoch(dt).date()
-    elif isinstance(dt, str) or isinstance(dt, unicode):
+    elif isinstance(dt, (str, unicode)):
         return parse_date(dt).date()
     else:
         return datetime.date(dt)
@@ -180,12 +200,15 @@ def coerce_date(dt):
     """
     Coerces a value into a datetime.datetime
     """
+    global _millis
     if isinstance(dt, datetime.datetime):
         return dt
     elif isinstance(dt, datetime.date):
         return datetime.datetime(dt.year, dt.month, dt.day)
     elif isinstance(dt, types.NoneType):
         return dt
+    elif isinstance(dt, (int, long, float)) and _millis:
+        return from_epoch_millis(dt)
     elif isinstance(dt, (int, long, float)):
         return from_epoch(dt)
     elif isinstance(dt, (str, unicode)):
@@ -195,15 +218,21 @@ def coerce_date(dt):
 
 def from_epoch(epoch):
     """
-    Returns the epoch in UTC from a given epoch value (in seconds)
+    Returns a datetime.datetime object from the specified UTC time (in seconds).
     """
     return datetime.datetime.utcfromtimestamp(epoch)
+
+def from_epoch_millis(epoch):
+    """
+    Returns a datetime.datetime object from the specified UTC time (in milliseconds).
+    """
+    return datetime.datetime.utcfromtimestamp(epoch/1000)
 
 def to_epoch(dt):
     """
     Converts a datetime into Unix epoch (in seconds)
     """
-    if isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
+    if isinstance(dt, (int, long, float)):
         return dt
     return calendar.timegm(coerce_date(dt).timetuple())
 
@@ -212,10 +241,9 @@ def to_epoch_millis(dt):
     Converts a datetime into Unix Epoch (in milliseconds).
     Assumes that any integer type value is already milliseconds.
     """
-    if isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
+    if isinstance(dt, (int, long, float)):
         return dt
     return int(1000 * calendar.timegm(coerce_date(dt).timetuple()))
-
 
 def to_second(dt):
     """
