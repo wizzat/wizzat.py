@@ -4,9 +4,15 @@ __all__ = [
     'clear_date_formats',
     'coerce_date',
     'coerce_day',
+    'day_to_ushort',
     'days',
+    'format_day',
+    'format_hour',
+    'format_month',
+    'format_week',
     'from_epoch',
     'hours',
+    'intervals',
     'minutes',
     'now',
     'parse_date',
@@ -25,13 +31,8 @@ __all__ = [
     'to_year',
     'today',
     'ushort_to_day',
-    'day_to_ushort',
     'weeks',
     'yesterday',
-    'format_hour',
-    'format_day',
-    'format_week',
-    'format_month',
 ]
 
 _now = None
@@ -206,6 +207,16 @@ def to_epoch(dt):
         return dt
     return calendar.timegm(coerce_date(dt).timetuple())
 
+def to_epoch_millis(dt):
+    """
+    Converts a datetime into Unix Epoch (in milliseconds).
+    Assumes that any integer type value is already milliseconds.
+    """
+    if isinstance(dt, int) or isinstance(dt, long) or isinstance(dt, float):
+        return dt
+    return int(1000 * calendar.timegm(coerce_date(dt).timetuple()))
+
+
 def to_second(dt):
     """
     Truncates a datetime to second
@@ -320,3 +331,11 @@ def weeks(n):
     Returns a datetime.timedelta object for n weeks
     """
     return datetime.timedelta(weeks = n)
+
+def intervals(duration, dt=None):
+    if not dt:
+        dt = to_epoch(now())
+    else:
+        dt = to_epoch(coerce_date(dt))
+
+    return int(1 + dt/duration) * duration
