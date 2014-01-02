@@ -172,7 +172,7 @@ def parse_date(dt):
     for fmt in _date_formats:
         try:
             return datetime.datetime.strptime(dt, fmt)
-        except ValueError, e:
+        except ValueError as e:
             pass
     raise ValueError("Unable to parse date ({}) with any format ({})".format(dt, _date_formats))
 

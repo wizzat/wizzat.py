@@ -58,7 +58,7 @@ class QueueFile(object):
                     s = self.write_queue.get(False)
                     fp.write(s)
                     fp.write("\n")
-            except Queue.Empty, e:
+            except Queue.Empty as e:
                 pass
             finally:
                 fp.flush()
