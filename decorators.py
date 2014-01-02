@@ -439,7 +439,7 @@ def tail_call_optimized(obj):
             while 1:
                 try:
                     return obj(*args, **kwargs)
-                except TailRecurseException, e:
+                except TailRecurseException as e:
                     args   = e.args
                     kwargs = e.kwargs
 

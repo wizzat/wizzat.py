@@ -309,7 +309,7 @@ def funcs(obj):
     """
     try:
         return [ y for x,y in obj.__dict__.iteritems() if isinstance(y, (types.FunctionType, classmethod)) ]
-    except (TypeError, AttributeError), e:
+    except (TypeError, AttributeError) as e:
         print e
         return []
 

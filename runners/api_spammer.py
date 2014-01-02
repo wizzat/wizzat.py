@@ -113,7 +113,7 @@ Status Codes
                 with self.stats.lock:
                     self.stats.status_codes[rq.status_code] += 1
                     self.stats.add_value(rq.elapsed.microseconds)
-            except (IOError, requests.ConnectionError), e:
+            except (IOError, requests.ConnectionError) as e:
                 self.stats.status_codes['retry'] += 1
 
     def sig_term(self, signal, frame):
