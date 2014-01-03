@@ -2,6 +2,58 @@ from pyutil.decorators import *
 from pyutil.testutil   import *
 import time
 
+class MemoizePropertyTest(TestCase):
+    def test_memoizes(self):
+        class F(object):
+            def __init__(self):
+                self.counter = 0
+
+            @memoize_property
+            def foo(self):
+                self.counter += 1
+                return self.counter
+
+        f = F()
+        self.assertEqual(f.foo(), 1)
+        self.assertEqual(f.foo(), 1)
+
+    def test_memoize_on_only_obj(self):
+        class F(object):
+            def __init__(self):
+                self.counter = 0
+
+            @memoize_property
+            def foo(self):
+                self.counter += 1
+                return self.counter
+
+        f1 = F()
+        f2 = F()
+        f2.counter = 200
+        self.assertEqual(f1.foo(), 1)
+        self.assertEqual(f1.foo(), 1)
+        self.assertEqual(f2.foo(), 201)
+        self.assertEqual(f2.foo(), 201)
+        self.assertEqual(f1.foo(), 1)
+
+    def test_memoize_on_classobj(self):
+        class F(object):
+            counter = 0
+
+            @classmethod
+            @memoize_property
+            def foo(cls):
+                cls.counter += 1
+                return cls.counter
+
+        self.assertEqual(F.counter, 0)
+        self.assertEqual(F.foo(), 1)
+        self.assertEqual(F.foo(), 1)
+        self.assertEqual(F.counter, 1)
+
+        F.counter = 2
+        self.assertEqual(F.foo(), 1)
+
 class MemoizeTest(TestCase):
     options = {
         'stats'        : (False, True),
