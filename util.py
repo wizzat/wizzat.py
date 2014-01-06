@@ -7,6 +7,7 @@ __all__ = [
     'chunks',
     'first_existing_path',
     'funcs',
+    'grep',
     'import_class',
     'invert_dict',
     'is_online',
@@ -312,6 +313,15 @@ def funcs(obj):
     except (TypeError, AttributeError) as e:
         print e
         return []
+
+def grep(iterable):
+    """
+        Returns all non-none values in an iterable
+    """
+    if isinstance(iterable, (list, tuple)):
+        return [ x for x in iterable if x != None ]
+    else:
+        return ( x for x in iterable if x != None )
 
 class OfflineError(Exception): pass
 
