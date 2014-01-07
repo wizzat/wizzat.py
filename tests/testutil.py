@@ -136,3 +136,37 @@ class TestUtil(TestCase):
             range(80,  90),
             range(90, 100),
         ])
+
+    def test_filter_keys(self):
+        self.assertEqual(filter_keys([ 'a', 'b' ], { 'a' : 1, 'b' : 2, 'c' : 3 }), {
+            'a' : 1,
+            'b' : 2,
+        })
+
+        self.assertEqual(filter_keys([ 'a', 'b' ], { 'a' : 1, 'b' : 2, 'c' : 3 }, True), {
+            'a' : 1,
+            'b' : 2,
+        })
+
+        self.assertEqual(filter_keys([ 'a', 'b' ], { 'a' : 1, 'b' : 2, 'c' : 3 }, False), {
+            'a' : 1,
+            'b' : 2,
+        })
+
+        self.assertEqual(filter_keys([ 'a', 'b', 'asdf' ], { 'a' : 1, 'b' : 2, 'c' : 3 }, False), {
+            'a' : 1,
+            'b' : 2,
+        })
+
+        with self.assertRaises(KeyError):
+            self.assertEqual(filter_keys([ 'a', 'b', 'asdf' ], { 'a' : 1, 'b' : 2, 'c' : 3 }), {
+                'a' : 1,
+                'b' : 2,
+            })
+
+    def test_unique(self):
+        self.assertEqual(unique([ 'a', 'b', 'b', 'c', 'd', 'a' ]), [ 'a', 'b', 'c', 'd' ])
+        self.assertEqual(unique(list(reversed(range(5))) + range(6)), [ 4, 3, 2, 1, 0, 5 ])
+
+        with self.assertRaises(TypeError):
+            self.assertEqual(unique([ {'a' : 1}, {'a' : 2} ]), [ 'a', 'b', 'c', 'd' ])

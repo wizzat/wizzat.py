@@ -6,6 +6,7 @@ __all__ = [
     'chdir',
     'chunks',
     'first_existing_path',
+    'filter_keys',
     'funcs',
     'grep',
     'import_class',
@@ -21,6 +22,7 @@ __all__ = [
     'swallow',
     'tmpdir',
     'umask',
+    'unique',
     'update_env',
 ]
 
@@ -314,6 +316,16 @@ def funcs(obj):
         print e
         return []
 
+def filter_keys(keys, dictionary, error = True):
+    """
+        Returns a dictionary filtered to the specific keys.  If error is True, the keys must be present.
+
+    """
+    if error:
+        return { k : dictionary[k] for k in keys }
+    else:
+        return { k : dictionary[k] for k in keys if k in dictionary }
+
 def grep(iterable):
     """
         Returns all non-none values in an iterable
@@ -322,6 +334,15 @@ def grep(iterable):
         return [ x for x in iterable if x != None ]
     else:
         return ( x for x in iterable if x != None )
+
+def unique(iterable):
+    """
+        Returns the unique items while preserving order.
+    """
+    d = collections.OrderedDict()
+    for x in iterable:
+        d[x] = 1
+    return d.keys()
 
 class OfflineError(Exception): pass
 
