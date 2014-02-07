@@ -1,17 +1,20 @@
-import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, json, ConfigParser
+import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, ConfigParser
+import ujson as json
 
 __all__ = [
     'assert_online',
     'carp',
     'chdir',
     'chunks',
-    'first_existing_path',
     'filter_keys',
+    'first_existing_path',
     'funcs',
     'grep',
     'import_class',
     'invert_dict',
     'is_online',
+    'json_copy',
+    'json_path',
     'load_json_paths',
     'merge_dicts',
     'mkdirp',
@@ -195,6 +198,13 @@ def load_config_paths(*paths):
     with open(first_existing_path(*paths), 'r') as fp:
         return ConfigParser.SafeConfigParser.readfp(fp)
 
+def json_path(obj, *args):
+    for arg in args:
+        if arg not in obj:
+            return None
+        obj = obj[arg]
+    return obj
+
 def merge_dicts(*iterable):
     """
         Merge a list of dictionaries.
@@ -325,6 +335,24 @@ def filter_keys(keys, dictionary, error = True):
         return { k : dictionary[k] for k in keys }
     else:
         return { k : dictionary[k] for k in keys if k in dictionary }
+
+def json_copy(obj):
+    if isinstance(obj, dict):
+        new_obj = dict(obj)
+        for k, v in new_obj.iteritems():
+            if isinstance(v, dict):
+                new_obj[k] = json_copy(v)
+            elif isinstance(v, (list, tuple)):
+                new_obj[k] = json_copy(v)
+    elif isinstance(obj, (list, tuple)):
+        new_obj = list(obj)
+        for k, v in enumerate(new_obj):
+            if isinstance(v, dict):
+                new_obj[k] = json_copy(v)
+            elif isinstance(v, (list, tuple)):
+                new_obj[k] = json_copy(v)
+
+    return new_obj
 
 def grep(iterable):
     """

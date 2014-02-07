@@ -170,3 +170,30 @@ class TestUtil(TestCase):
 
         with self.assertRaises(TypeError):
             self.assertEqual(unique([ {'a' : 1}, {'a' : 2} ]), [ 'a', 'b', 'c', 'd' ])
+
+    def test_json_copy(self):
+        obj = {
+            'key1' : '123',
+            'key2' : {
+                'inner_key1' : {
+                    'inner_inner_key1' : '123',
+                    'inner_inner_key2' : '123',
+                }
+            },
+            'key3' : [
+                { 'inner_key1' : '123' },
+                '123',
+            ]
+        }
+
+        new_obj = json_copy(obj)
+        self.assertFalse(new_obj is obj)
+        self.assertFalse(new_obj['key2'] is obj['key2'])
+        self.assertFalse(new_obj['key2']['inner_key1'] is obj['key2']['inner_key1'])
+        self.assertFalse(new_obj['key3'] is obj['key3'])
+        self.assertFalse(new_obj['key3'][0] is obj['key3'][0])
+
+        # The data is unchanged
+        self.assertTrue(new_obj['key2']['inner_key1']['inner_inner_key1'] is obj['key2']['inner_key1']['inner_inner_key1'])
+        self.assertTrue(new_obj['key2']['inner_key1']['inner_inner_key2'] is obj['key2']['inner_key1']['inner_inner_key2'])
+        self.assertTrue(new_obj['key3'][0]['inner_key1'] is obj['key3'][0]['inner_key1'])

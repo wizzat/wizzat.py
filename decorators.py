@@ -2,15 +2,15 @@ import functools, time, traceback, logging, sys, threading, StringIO
 from util import swallow
 
 __all__ = [
+    'BenchResults',
     'MemoizeResults',
+    'benchmark',
+    'coroutine',
     'memoize',
     'memoize_property',
-    'benchmark',
-    'BenchResults',
-    'coroutine',
     'skip_offline',
-    'skip_unfinished',
     'skip_performance',
+    'skip_unfinished',
 ]
 
 def coroutine(func):
