@@ -3,59 +3,18 @@ from pghelper import ConnMgr, fetch_results
 from util import assert_online, OfflineError
 from dateutil import reset_now
 from formattedtable import *
+from decorators import skip_offline, skip_unfinished, skip_performance
 
 __all__ = [
     'AssertSQLMixin',
     'TestCase',
     'OfflineError',
-    'skip_offline',
-    'skip_unfinished',
-    'skip_performance',
     'expected_failure',
     'expectedFailure',
 ]
 
-
 expected_failure = unittest.expectedFailure
 expectedFailure = unittest.expectedFailure
-
-def skip_offline(func):
-    """
-    This decorator is meant for tests.  It will catch OfflineError and issue a skipTest for you.
-    """
-    @functools.wraps(func)
-    def wrapper(self):
-        try:
-            assert_online()
-            retval = func(self)
-        except OfflineError:
-            self.skipTest("----- OFFLINE TEST -----")
-
-        return retval
-    return wrapper
-
-def skip_performance(func):
-    """
-    This decorator is meant for tests.  It checks for $ENV{PERFORMANCE_TEST} and will issue skipTest without it.
-    """
-    @functools.wraps(func)
-    def wrapper(self):
-        if not os.environ.get('PERFORMANCE_TEST', False):
-            self.skipTest("----- PERFORMANCE TEST -----")
-        else:
-            return func(self)
-
-    return wrapper
-
-def skip_unfinished(func):
-    """
-    This decorator is meant for tests.  It automatically issues a skipTest.
-    """
-
-    @functools.wraps(func)
-    def wrapper(self):
-        self.skipTest("----- UNFINISHED TEST -----")
-    return wrapper
 
 ###
 

@@ -8,6 +8,9 @@ __all__ = [
     'benchmark',
     'BenchResults',
     'coroutine',
+    'skip_offline',
+    'skip_unfinished',
+    'skip_performance',
 ]
 
 def coroutine(func):
@@ -458,16 +461,40 @@ def tail_call_optimized(obj):
 
     return func
 
-if __name__ == '__main__':
-    @memoize(ignore_nulls = 1, stats = 1, threads = 1, sync=1)
-    def a_func(some, value, *args, **kwargs):
-        time.sleep(.25)
-        print some, value, args, kwargs
+def skip_offline(func):
+    """
+    This decorator is meant for tests.  It will catch OfflineError and issue a skipTest for you.
+    """
+    @functools.wraps(func)
+    def wrapper(self):
+        try:
+            assert_online()
+            retval = func(self)
+        except OfflineError:
+            self.skipTest("----- OFFLINE TEST -----")
 
-    a_func(1, 2, a = 1)
-    a_func(1, 2, a = 1)
-    a_func(1, 2, a = 1)
-    time.sleep(1)
-    a_func(1, 2, a = 1)
+        return retval
+    return wrapper
 
-    print MemoizeResults.format_stats()
+def skip_performance(func):
+    """
+    This decorator is meant for tests.  It checks for $ENV{PERFORMANCE_TEST} and will issue skipTest without it.
+    """
+    @functools.wraps(func)
+    def wrapper(self):
+        if not os.environ.get('PERFORMANCE_TEST', False):
+            self.skipTest("----- PERFORMANCE TEST -----")
+        else:
+            return func(self)
+
+    return wrapper
+
+def skip_unfinished(func):
+    """
+    This decorator is meant for tests.  It automatically issues a skipTest.
+    """
+
+    @functools.wraps(func)
+    def wrapper(self):
+        self.skipTest("----- UNFINISHED TEST -----")
+    return wrapper
