@@ -1,5 +1,6 @@
 from pyutil.pghelper import *
 from pyutil.testutil import *
+from pyutil.pgtestutil import *
 from pyutil.util import *
 import psycopg2
 
@@ -23,7 +24,7 @@ class BarTable(DBTable):
         'c',
     )
 
-class DBTableTest(TestCase):
+class DBTableTest(PgTestCase):
     setup_database = True
 
     def setUp(self):

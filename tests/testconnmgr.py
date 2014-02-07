@@ -1,7 +1,8 @@
 from pyutil.testutil import *
 from pyutil import pghelper
+from pyutil.pgtestutil import *
 
-class ConnMgrTest(TestCase):
+class ConnMgrTest(PgTestCase):
     def test_creation(self):
         mgr = pghelper.ConnMgr(**self.db_info)
         self.assertEqual(mgr.connections, {})
