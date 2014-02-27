@@ -1,7 +1,7 @@
+import os, tempfile
 from pyutil.testutil import *
 from pyutil.runner import *
 from pyutil.util import *
-import datetime, time, os, uuid, logging
 
 class TestRunnerBase(TestCase):
     def test_basic(self):
@@ -34,3 +34,32 @@ class TestRunnerBase(TestCase):
             runner = runner.run()
 
         self.assertTrue('ZeroDivisionError' in slurp(runner.log_file))
+
+    def test_pidfile(self):
+        pidfile = tempfile.NamedTemporaryFile().name
+        class Runner(RunnerBase):
+            def pidfile(self):
+                return pidfile
+
+            def _run(self):
+                self.ran = True
+
+        r = Runner()
+
+        # Test when pidfile exists but doesn't contain anything
+        self.assertEqual(r.check_pidfile(), True)
+
+        # Test when pidfile doesn't exist
+        os.unlink(pidfile)
+        self.assertEqual(r.check_pidfile(), True)
+
+        # Test when pidfile exists with a valid pid
+        with open(pidfile, 'w') as fp:
+            fp.write(str(os.getpid()))
+        self.assertEqual(r.check_pidfile(), False)
+
+
+        # Test when pidfile exists with a non-parseable value
+        with open(pidfile, 'w') as fp:
+            fp.write("abc")
+        self.assertEqual(r.check_pidfile(), True)

@@ -59,19 +59,19 @@ class RunnerBase(object):
             logging.info("Checking pidfile: %s", pidfile)
             mkdirp(os.path.dirname(pidfile))
             if os.path.exists(pidfile):
-                pid = int(slurp(pidfile).trim())
-                logging.info("Pidfile %s exists, checking pid %d", pidfile)
                 try:
                     # Does the process exist and can we signal it?
+                    pid = int(slurp(pidfile).strip())
+                    logging.info("Pidfile %s exists, checking pid %d", pidfile, pid)
                     os.kill(pid, 0)
-                    logging.info("Pidfile exists and process can be signaled, aborting.")
+                    logging.info("Pidfile exists and process can be signaled, aborting")
                     return False
-                except:
-                    pass
+                except (ValueError, OSError):
+                    logging.info("Pidfile exists but process cannot be signaled, continuing")
 
             logging.info("Writing new pidfile %s (%d)", pidfile, os.getpid())
             with open(pidfile, 'w') as fp:
-                fp.write(os.getpid())
+                fp.write(str(os.getpid()))
 
         return True
 
