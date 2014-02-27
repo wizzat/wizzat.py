@@ -1,7 +1,8 @@
 import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, ConfigParser
-import ujson as json
+import json
 
 __all__ = [
+    'Host',
     'assert_online',
     'carp',
     'chdir',
@@ -18,6 +19,8 @@ __all__ = [
     'load_json_paths',
     'merge_dicts',
     'mkdirp',
+    'parse_host',
+    'parse_hosts',
     'reset_online',
     'set_defaults',
     'set_online',
@@ -371,6 +374,18 @@ def unique(iterable):
     for x in iterable:
         d[x] = 1
     return d.keys()
+
+Host = collections.namedtuple('Host', 'host port')
+Host.combined = lambda self: '{}:{}'.format(self.host, self.port)
+
+def parse_host(host_string, default_port):
+    try:
+        return Host(*host_string.split(':'))
+    except ValueError as e:
+        return Host(host_string, default_port)
+
+def parse_hosts(host_list, default_port):
+    return [ parse_host(x) for x in host_list.split(',') ]
 
 class OfflineError(Exception): pass
 

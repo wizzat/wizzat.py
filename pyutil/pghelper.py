@@ -179,7 +179,7 @@ def sql_where_from_params(**kwargs):
     Lists and tuples become in clauses
     """
     clauses = [ 'true' ]
-    for key, value in kwargs.iteritems():
+    for key, value in sorted(kwargs.iteritems()):
         if isinstance(value, list) or isinstance(value, tuple):
             if not value:
                 clauses = [ 'true = false' ]

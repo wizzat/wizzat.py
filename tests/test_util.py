@@ -67,8 +67,8 @@ class TestUtil(TestCase):
         doesnt_exist1 = str(uuid.uuid4())
         doesnt_exist2 = str(uuid.uuid4())
 
-        path = first_existing_path(doesnt_exist1, doesnt_exist2, 'testutil.py', 'testdateutil.py')
-        self.assertEqual(path, 'testutil.py')
+        path = first_existing_path(doesnt_exist1, doesnt_exist2, __file__, 'testdateutil.py')
+        self.assertEqual(path, __file__)
 
     def test_merge_dicts(self):
         merged = merge_dicts(
