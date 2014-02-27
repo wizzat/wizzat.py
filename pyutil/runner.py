@@ -15,7 +15,6 @@ class RunnerBase(object):
     """
     log_root = '/mnt/logs'
     process_name = None
-    should_check_pidfile = False
     sig_handlers = {
         signal.SIGTERM : 'sig_term',
         signal.SIGINT  : 'sig_int',
@@ -47,32 +46,28 @@ class RunnerBase(object):
             logging.exception("Caught exception")
             raise
 
-    def pidfile_name(self):
+    def pidfile(self):
         """
-        Returns the pidfile name for the current process.
-        Defaults to: ${TMPDIR}/pids/${process_name}
+        This method can be overridden to return a full file path, which will be checked as a pidfile.
+        If the pidfile exists and the process also exists, the process will be flagged as should_run = False.
         """
-        pidfile = os.path.join(
-            os.env.environ.get('TMPDIR', '/tmp'),
-            'pids',
-            self.process_name,
-        )
+        return False
 
     def check_pidfile(self):
-        pidfile = self.pidfile_name()
+        pidfile = self.pidfile()
+        if pidfile:
+            mkdirp(os.path.dirname(pidfile))
+            if os.path.exists(pidfile):
+                pid = int(slurp(pidfile).trim())
+                try:
+                    # Does the process exist and can we signal it?
+                    os.kill(pid, 0)
+                    return False
+                except:
+                    pass
 
-        mkdirp(os.path.dirname(pidfile))
-        if os.path.exists(pidfile):
-            pid = int(slurp(pidfile).trim())
-            try:
-                # Does the process exist and can we signal it?
-                os.kill(pid, 0)
-                return False
-            except:
-                pass
-
-        with open(pidfile, 'w') as fp:
-            fp.write(os.getpid())
+            with open(pidfile, 'w') as fp:
+                fp.write(os.getpid())
 
         return True
 
@@ -87,11 +82,9 @@ class RunnerBase(object):
         Should implement logic for determining whether the process should run.
         Memory constraints, CPU constraints, pidfiles, etc go here.
 
-        If should_check_pidfile, it will check and setup the pidfile.
-
         Called before _run()
         """
-        if self.should_check_pidfile and not self.check_pidfile():
+        if not self.check_pidfile():
             return False
 
         return True
