@@ -1,14 +1,15 @@
 from pyutil.testutil import *
 from pyutil import pghelper
-import psycopg2
+import psycopg2, psycopg2.extras
 
 class PgHelperTest(TestCase):
     db_info = {
-        'host'     : 'localhost',
-        'port'     : 5432,
-        'user'     : 'pyutil',
-        'password' : 'pyutil',
-        'database' : 'pyutil_testdb',
+        'host'           : 'localhost',
+        'port'           : 5432,
+        'user'           : 'pyutil',
+        'password'       : 'pyutil',
+        'database'       : 'pyutil_testdb',
+        'cursor_factory' : psycopg2.extras.DictCursor,
     }
 
     def test_connection(self):

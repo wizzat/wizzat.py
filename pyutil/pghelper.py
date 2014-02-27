@@ -7,6 +7,7 @@ except ImportError:
 import tempfile, cStringIO
 import psycopg2, psycopg2.extras, psycopg2.pool
 from types import *
+from sqlhelper import *
 
 __all__ = [
     #'vacuum',
@@ -28,66 +29,11 @@ __all__ = [
     'view_exists',
 ]
 
-_log_func = None
-def set_sql_log_func(func):
-    """
-    Sets the log function for execute.  It should look something like:
-
-    def log_func(sql):
-        pass
-
-    pyutil.dbhelper.set_sql_log_func(log_func)
-    """
-    global _log_func
-    _log_func = func
-
-
-def execute(conn, sql, **bind_params):
-    """
-    Executes a SQL command against the connection with optional bind params.
-    """
-    global _log_func
-
-    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-        bound_sql = cur.mogrify(sql, bind_params)
-
-        if _log_func:
-            _log_func(bound_sql)
-
-        cur.execute(sql, bind_params)
-
-def iter_results(conn, sql, **bind_params):
-    """
-    Delays fetching the SQL results into memory until iteration
-    Keeps memory footprint low
-    """
-    global _log_func
-    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-        if _log_func:
-            bound_sql = cur.mogrify(sql, bind_params)
-            _log_func(bound_sql)
-
-        cur.execute(sql, bind_params)
-        for row in cur:
-            yield row
-
-def fetch_results(conn, sql, **bind_params):
-    """
-    Immediatly fetches the SQL results into memory
-    Trades memory for the ability to immediately execute another query
-    """
-    global _log_func
-    with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-        if _log_func:
-            bound_sql = cur.mogrify(sql, bind_params)
-            _log_func(bound_sql)
-
-        cur.execute(sql, bind_params)
-        return cur.fetchall()
-
 def copy_from(conn, fp, table_name, columns = None):
     """
     Resets the file pointer and initiates a pg_copy.
+
+    This method requires postgresql
     """
     fp.seek(0)
     conn.cursor().copy_from(fp, table_name, columns = columns)
@@ -95,6 +41,8 @@ def copy_from(conn, fp, table_name, columns = None):
 def copy_from_rows(conn, table_name, columns, rows):
     """
     Creates a file object containing the tab separated rows.
+
+    This method requires postgresql
     """
     fp = cStringIO.StringIO()
     for row in rows:
@@ -107,6 +55,8 @@ def copy_from_rows(conn, table_name, columns, rows):
 def relation_info(conn, relname, relkind = 'r'):
     """
     Fetch object information from the pg catalog
+
+    This method requires postgresql
     """
     return fetch_results(conn, """
         SELECT *
@@ -121,6 +71,8 @@ def relation_info(conn, relname, relkind = 'r'):
 def table_columns(conn, table_name):
     """
     Gets the column names and data types for the table
+
+    This method requires postgresql
     """
     return fetch_results(conn, """
         SELECT
@@ -135,41 +87,53 @@ def drop_table(conn, table_name):
     """
     Drops a table
     """
-    execute(conn, "drop table if exists {}".format(table_name))
+    execute(conn, "DROP TABLE IF EXISTS {}".format(table_name))
 
 def table_exists(conn, table_name):
     """
     Determine whether a table exists in the current database
+
+    This method requires postgresql
     """
     return len(relation_info(conn, table_name, 'r')) > 0
 
 def view_exists(conn, view_name):
     """
     Determine whether a view exists in the current database
+
+    This method requires postgresql
     """
     return len(relation_info(conn, view_name, 'v')) > 0
 
 def analyze(conn, table_name):
     """
     Analyzes a table
+
+    This method requires postgresql
     """
     execute(conn, "analyze {}".format(table_name))
 
 def vacuum(conn, table_name):
     """
     Vacuums a table
+
+    This method requires postgresql
     """
     raise NotImplemented()
 
 def currval(conn, sequence):
     """
     Obtains the current value of a sequence
+
+    This method requires postgresql
     """
     return fetch_results(conn, "select currval(%(sequence)s)", sequence = sequence)[0][0]
 
 def nextval(conn, sequence):
     """
     Obtains the next value of a sequence
+
+    This method requires postgresql
     """
     return fetch_results(conn, "select nextval(%(sequence)s)", sequence = sequence)[0][0]
 
@@ -376,9 +340,12 @@ class ConnMgr(object):
     """
     all_mgrs = []
     def __init__(self, **conn_info):
+        import psycopg2, psycopg2.extras, psycopg2.pool
+
         self.conn_info = conn_info
         self.minconn   = self.conn_info.pop('minconn', 0)
         self.maxconn   = self.conn_info.pop('maxconn', 5)
+        self.conn_info.setdefault('cursor_factory', psycopg2.extras.DictCursor)
         self.pool      = psycopg2.pool.ThreadedConnectionPool(self.minconn, self.maxconn, **self.conn_info)
         self.connections = {}
         self.all_mgrs.append(self)

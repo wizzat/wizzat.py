@@ -10,6 +10,7 @@ pyutil/pgtestutil.py
 pyutil/queuefile.py
 pyutil/runner.py
 pyutil/serialization.py
+pyutil/sqlhelper.py
 pyutil/sqlutil.py
 pyutil/testutil.py
 pyutil/util.py
