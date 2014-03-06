@@ -1,5 +1,5 @@
 import functools, time, traceback, logging, sys, threading, StringIO
-from util import swallow
+from util import swallow, OfflineError, assert_online
 
 __all__ = [
     'BenchResults',
