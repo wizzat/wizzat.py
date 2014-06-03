@@ -133,6 +133,12 @@ def touch(path):
     with open(path, 'a') as fp:
         pass
 
+def listdirs(paths, regex = None):
+    for path in paths:
+        for filename in os.listdir(path):
+            if not regex or re.match(regex, filename):
+                yield os.path.join(path, filename)
+
 def mkdirp(path):
     """
         Ensure that directory path exists.
@@ -421,3 +427,4 @@ def reset_online():
     global _offline
     _offline = os.environ.get('OFFLINE', False) == False
 reset_online()
+
