@@ -6,6 +6,7 @@ __all__ = [
     'coerce_day',
     'day_to_ushort',
     'days',
+    'format_date',
     'format_day',
     'format_hour',
     'format_month',

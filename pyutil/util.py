@@ -3,6 +3,7 @@ import json
 
 __all__ = [
     'Host',
+    'OfflineError',
     'assert_online',
     'carp',
     'chdir',
@@ -208,6 +209,9 @@ def load_config_paths(*paths):
         return ConfigParser.SafeConfigParser.readfp(fp)
 
 def json_path(obj, *args):
+    if not obj:
+        return None
+
     for arg in args:
         if arg not in obj:
             return None
@@ -347,21 +351,11 @@ def filter_keys(keys, dictionary, error = True):
 
 def json_copy(obj):
     if isinstance(obj, dict):
-        new_obj = dict(obj)
-        for k, v in new_obj.iteritems():
-            if isinstance(v, dict):
-                new_obj[k] = json_copy(v)
-            elif isinstance(v, (list, tuple)):
-                new_obj[k] = json_copy(v)
+        return { k : (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for k, v in obj.iteritems() }
     elif isinstance(obj, (list, tuple)):
-        new_obj = list(obj)
-        for k, v in enumerate(new_obj):
-            if isinstance(v, dict):
-                new_obj[k] = json_copy(v)
-            elif isinstance(v, (list, tuple)):
-                new_obj[k] = json_copy(v)
-
-    return new_obj
+        return [ (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for v in obj ]
+    else:
+        return obj
 
 def grep(iterable):
     """
@@ -401,7 +395,6 @@ def assert_online():
         hooks into @skip_offline, but can be used in other situations as well.
     """
     if not is_online():
-        import testutil
         raise OfflineError()
 
 # Initial value for _offline set from environment
@@ -427,4 +420,3 @@ def reset_online():
     global _offline
     _offline = os.environ.get('OFFLINE', False) == False
 reset_online()
-

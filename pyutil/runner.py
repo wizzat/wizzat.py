@@ -26,8 +26,8 @@ class RunnerBase(object):
         self.terminated  = False
         self.interrupted = False
 
-        self.setup_connections()
         self.setup_logging()
+        self.setup_connections()
 
         for sig, func in self.sig_handlers.iteritems():
             signal.signal(sig, getattr(self, func))
@@ -117,16 +117,19 @@ class RunnerBase(object):
         """
         By default, sig_term sets the `terminated` flag.  This can be used for main loop control.
         """
+        logging.critical('Received sigterm')
         self.terminated = True
 
     def sig_int(self, signal, frame):
         """
         By default, sig_int sets the `interrupted` flag.  This can be used for main loop control.
         """
+        logging.critical('Received sigint')
         self.interrupted = True
 
     def sig_hup(self, signal, frame):
         """
         By default, sig_hup will close and reopen log files (for log rotation)
         """
+        logging.critical('Received sighup')
         self.setup_logging()
