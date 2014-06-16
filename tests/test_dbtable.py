@@ -16,8 +16,7 @@ class FooTable(DBTable):
 
 class BarTable(DBTable):
     table_name = 'bar'
-    key_field  = 'a'
-    conn       = None
+    key_fields = [ 'a' ]
     fields     = (
         'a',
         'b',
@@ -55,10 +54,10 @@ class DBTableTest(PgTestCase):
         f3 = FooTable(a = 1, b = 3).update()
         f4 = FooTable(a = 2, b = 4).update()
 
-        self.assertEqual(f1.db_fields, { "a" : 1, "b" : 2, })
-        self.assertEqual(f2.db_fields, { "a" : 1, "b" : 2, })
-        self.assertEqual(f3.db_fields, { "a" : 1, "b" : 3, })
-        self.assertEqual(f4.db_fields, { "a" : 2, "b" : 4, })
+        self.assertEqual(f1.to_dict(), { "a" : 1, "b" : 2, })
+        self.assertEqual(f2.to_dict(), { "a" : 1, "b" : 2, })
+        self.assertEqual(f3.to_dict(), { "a" : 1, "b" : 3, })
+        self.assertEqual(f4.to_dict(), { "a" : 2, "b" : 4, })
 
         self.assertSqlResults(self.conn, """
             SELECT *
@@ -99,10 +98,6 @@ class DBTableTest(PgTestCase):
             [  2,   4,  ],
         )
 
-        self.sql = None
-        def log_func(sql):
-            self.sql = sql
-
         f1.b = 3
         f1.update()
         f1.commit()
@@ -133,7 +128,7 @@ class DBTableTest(PgTestCase):
         )
 
     def test_update__catches_primary_key_changes(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ValueError):
             f1 = BarTable(a = 1, b = 2, c = 3).update()
             f2 = BarTable(a = 2, b = 2, c = 3).update()
 
