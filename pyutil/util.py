@@ -1,4 +1,4 @@
-import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, ConfigParser
+import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, ConfigParser, re
 import json
 
 __all__ = [
