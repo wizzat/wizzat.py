@@ -6,6 +6,7 @@ pyutil/decorators.py
 pyutil/formattedtable.py
 pyutil/mathutil.py
 pyutil/pghelper.py
+pyutil/pgpartition.py
 pyutil/pgtestutil.py
 pyutil/queuefile.py
 pyutil/runner.py

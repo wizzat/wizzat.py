@@ -1,4 +1,4 @@
-import datetime, types, calendar, contextlib
+import datetime, types, calendar, contextlib, numbers
 
 __all__ = [
     'clear_date_formats',
@@ -188,9 +188,9 @@ def coerce_day(dt):
         return dt
     elif isinstance(dt, types.NoneType):
         return dt
-    elif isinstance(dt, (int, long, float)) and _millis:
+    elif isinstance(dt, numbers.Number) and _millis:
         return from_epoch_millis(dt).date()
-    elif isinstance(dt, (int, long, float)):
+    elif isinstance(dt, numbers.Number):
         return from_epoch(dt).date()
     elif isinstance(dt, (str, unicode)):
         return parse_date(dt).date()
@@ -208,9 +208,9 @@ def coerce_date(dt):
         return datetime.datetime(dt.year, dt.month, dt.day)
     elif isinstance(dt, types.NoneType):
         return dt
-    elif isinstance(dt, (int, long, float)) and _millis:
+    elif isinstance(dt, numbers.Number) and _millis:
         return from_epoch_millis(dt)
-    elif isinstance(dt, (int, long, float)):
+    elif isinstance(dt, numbers.Number):
         return from_epoch(dt)
     elif isinstance(dt, (str, unicode)):
         return parse_date(dt)
@@ -233,7 +233,7 @@ def to_epoch(dt):
     """
     Converts a datetime into Unix epoch (in seconds)
     """
-    if isinstance(dt, (int, long, float)):
+    if isinstance(dt, numbers.Number):
         return dt
     return calendar.timegm(coerce_date(dt).timetuple())
 
@@ -242,7 +242,7 @@ def to_epoch_millis(dt):
     Converts a datetime into Unix Epoch (in milliseconds).
     Assumes that any integer type value is already milliseconds.
     """
-    if isinstance(dt, (int, long, float)):
+    if isinstance(dt, numbers.Number):
         return dt
     return int(1000 * calendar.timegm(coerce_date(dt).timetuple()))
 
