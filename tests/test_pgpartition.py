@@ -12,9 +12,36 @@ from pyutil.pgpartition import *
 from pyutil.dateutil import *
 from pyutil.pghelper import *
 
-class PgPartitionTest(PgTestCase):
+class PartitionerTestCase(PgTestCase):
     setup_database = True
 
+    def create_test_table(self):
+        execute(self.conn, """
+            DROP TABLE IF EXISTS part_table;
+            CREATE TABLE part_table (
+                datefield TIMESTAMP,
+                meta      INT
+            );
+        """)
+        self.conn.commit()
+
+    def insert_row(self, partition_name, datefield = None, meta = None):
+        sql = """
+            INSERT INTO {partition_name} (
+                datefield,
+                meta
+            ) VALUES (
+                %(datefield)s,
+                %(meta)s
+            )
+        """.format(partition_name = partition_name)
+
+        execute(self.conn, sql,
+            datefield = datefield,
+            meta      = meta,
+        )
+
+class PgPartitionTest(PartitionerTestCase):
     def test_partition_sql__timestamp(self):
         sql = generate_partition_sql('part_table', 'part_table_20140505', range_values = {
             'field' : 'datefield',
@@ -191,28 +218,105 @@ class PgPartitionTest(PgTestCase):
             self.insert_row('part_table_20140505_1', '2014-05-06 01:02:03', 1)
         self.conn.commit()
 
-    def create_test_table(self):
+class PgDatePartitionerTest(PartitionerTestCase):
+    def test_partition_name__day_partitioner(self):
+        partitioner = DayPartitioner('part_table', 'date_field')
+        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'part_table_20140404')
+        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'part_table_20140504')
+
+    def test_partition_name__week_partitioner(self):
+        partitioner = WeekPartitioner('part_table', 'date_field')
+        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'part_table_20140331')
+        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'part_table_20140428')
+
+    def test_partition_name__month_partitioner(self):
+        partitioner = MonthPartitioner('part_table', 'date_field')
+        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'part_table_20140401')
+        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'part_table_20140501')
+
+    def test_valid_partition__no_retention_period(self):
+        set_now("2014-04-04 00:01:23")
+        partitioner = DayPartitioner('part_table', 'date_field', retention_period = None)
+
+        self.assertEqual(partitioner.valid_partition('1960-01-01 00:00:00'), True)
+        self.assertEqual(partitioner.valid_partition('2014-04-04 23:59:59'), True)
+        self.assertEqual(partitioner.valid_partition('2014-04-05 00:00:00'), True)
+        self.assertEqual(partitioner.valid_partition('2014-04-06 00:00:00'), False)
+
+    def test_valid_partition__day_partitioner__retention_period(self):
+        set_now('2014-04-04 00:01:23')
+
+        partitioner = DayPartitioner('part_table', 'date_field', retention_period = days(90))
+
+        self.assertEqual(partitioner.valid_partition('1960-01-01 00:00:00'), False)
+        self.assertEqual(partitioner.valid_partition('2014-01-03 00:00:00'), False)
+        self.assertEqual(partitioner.valid_partition('2014-01-04 00:00:00'), True)
+        self.assertEqual(partitioner.valid_partition('2014-04-04 23:59:59'), True)
+        self.assertEqual(partitioner.valid_partition('2014-04-04 23:59:59'), True)
+        self.assertEqual(partitioner.valid_partition('2014-04-05 00:00:00'), True)
+        self.assertEqual(partitioner.valid_partition('2014-04-06 00:00:00'), False)
+
+    def test_complains_if_base_table_does_not_exist(self):
+        partitioner = DayPartitioner('part_table', 'date_field')
+
         execute(self.conn, """
             DROP TABLE IF EXISTS part_table;
-            CREATE TABLE part_table (
-                datefield TIMESTAMP,
-                meta      INT
-            );
         """)
-        self.conn.commit()
 
-    def insert_row(self, partition_name, datefield = None, meta = None):
-        sql = """
-            INSERT INTO {partition_name} (
-                datefield,
-                meta
-            ) VALUES (
-                %(datefield)s,
-                %(meta)s
-            )
-        """.format(partition_name = partition_name)
+        with self.assertRaises(PgProgrammingError):
+            partitioner.find_or_create_partition(self.conn, '2014-04-04 23:59:59')
 
-        execute(self.conn, sql,
-            datefield = datefield,
-            meta      = meta,
+    def test_complains_if_base_table_does_not_exist(self):
+        partitioner = DayPartitioner('part_table', 'date_field')
+
+        execute(self.conn, """
+            DROP TABLE IF EXISTS part_table;
+        """)
+
+        with self.assertRaises(PgProgrammingError):
+            partitioner.find_or_create_partition(self.conn, '2014-04-04 23:59:59')
+
+    def test_actually_creates_partition(self):
+        self.create_test_table()
+        partitioner = DayPartitioner('part_table', 'datefield')
+
+        for date in [ '2014-05-05 00:00:00', '2014-05-05 23:59:59', '2014-05-06 00:00:01', ]:
+            self.insert_row(partitioner.find_or_create_partition(self.conn, date), date, 1)
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM only part_table
+            ORDER BY datefield
+        """,
+            [ 'datefield',            'meta',  ],
+        )
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM part_table
+            ORDER BY datefield
+        """,
+            [ 'datefield',            'meta',  ],
+            [ '2014-05-05 00:00:00',  1,       ],
+            [ '2014-05-05 23:59:59',  1,       ],
+            [ '2014-05-06 00:00:01',  1,       ],
+        )
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM part_table_20140505
+            ORDER BY datefield
+        """,
+            [ 'datefield',            'meta',  ],
+            [ '2014-05-05 00:00:00',  1,       ],
+            [ '2014-05-05 23:59:59',  1,       ],
+        )
+
+        self.assertSqlResults(self.conn, """
+            SELECT *
+            FROM part_table_20140506
+            ORDER BY datefield
+        """,
+            [ 'datefield',            'meta',  ],
+            [ '2014-05-06 00:00:01',  1,       ],
         )

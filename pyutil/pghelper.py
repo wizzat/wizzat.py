@@ -28,7 +28,14 @@ __all__ = [
     'table_columns',
     'table_exists',
     'view_exists',
+    'PgIntegrityError',
+    'PgOperationalError',
+    'PgProgrammingError',
 ]
+
+PgIntegrityError   = psycopg2.IntegrityError
+PgOperationalError = psycopg2.OperationalError
+PgProgrammingError = psycopg2.ProgrammingError
 
 def copy_from(conn, fp, table_name, columns = None):
     """
@@ -164,7 +171,6 @@ class DBTableError(Exception): pass
 class DBTableConfigError(DBTableError): pass
 class DBTableImmutableFieldError(DBTableError): pass
 
-
 class DBTableMeta(type):
     def __init__(cls, name, bases, dct):
         super(DBTableMeta, cls).__init__(name, bases, dct)
@@ -210,6 +216,8 @@ class DBTableMeta(type):
 class DBTable(object):
     """
     This is a micro-ORM for the purposes of not having dependencies on Django or SQLAlchemy.
+    Philosophically, it also supports merely the object abstraction and super simple sql generation.
+    It requires full knowledge of SQL.
     """
     __metaclass__ = DBTableMeta
     memoize       = False
@@ -331,7 +339,11 @@ class DBTable(object):
             nowait = nowait,
         )
 
-        for row in iter_results(cls.conn, sql, **kwargs):
+        return cls.find_by_sql(sql, **kwargs)
+
+    @classmethod
+    def find_by_sql(cls, sql, **bind_params):
+        for row in iter_results(cls.conn, sql, **bind_params):
             yield cls(_is_in_db = True, **row)
 
     def rowlock(self, nowait = False):

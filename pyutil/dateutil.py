@@ -361,6 +361,12 @@ def weeks(n):
     """
     return datetime.timedelta(weeks = n)
 
+def date_range(start, stop, interval):
+    current_value = coerce_date(start)
+    while current_value < coerce_date(stop):
+        yield current_value
+        current_value += interval
+
 def intervals(duration, dt=None):
     if not dt:
         dt = to_epoch(now())

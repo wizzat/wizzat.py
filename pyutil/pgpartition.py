@@ -1,13 +1,92 @@
+import collections
 import datetime
-from pyutil.dateutil import format_day, format_date
-from pyutil.pghelper import execute
+import pyutil.pghelper
+from pyutil.dateutil import *
+from pyutil.pghelper import execute, table_exists
 
 __all__ = [
     'create_partition',
     'generate_partition_sql',
+    'UnretainedPartitionError',
+    'DatePartitioner',
+    'DayPartitioner',
+    'WeekPartitioner',
+    'MonthPartitioner',
 ]
 
+class UnretainedPartitionError(Exception): pass
+
+
+class DatePartitioner(object):
+    def __init__(self, table_name, date_field, date_type = 'timestamp', date_fmt = "%Y%m%d", reject_future = True, retention_period = None):
+        self.table_name       = table_name
+        self.date_field       = date_field
+        self.date_type        = date_type
+        self.date_fmt         = date_fmt
+        self.reject_future    = reject_future
+        self.retention_period = retention_period
+
+    def find_or_create_partition(self, conn, date):
+        date = self.trunc_func(coerce_date(date))
+
+        if not self.valid_partition(date):
+            raise UnretainedPartitionError((date, self.retention_period))
+
+        partition_name = self.partition_name(date)
+
+        pyutil.pgpartition.create_partition(conn, self.table_name, partition_name, range_values = [{
+            'field' : self.date_field,
+            'start' : date,
+            'stop'  : date + self.interval,
+        }])
+
+        return partition_name
+
+    def valid_partition(self, date):
+        date = coerce_date(date)
+        invalid = False
+
+        if self.retention_period:
+            earliest_date = self.trunc_func(now() - self.retention_period)
+            invalid = invalid or date < earliest_date
+
+        if self.reject_future:
+            latest_date = self.trunc_func(now() + self.interval)
+            invalid = invalid or date > latest_date
+
+        return not invalid
+
+    def partition_name(self, date):
+        start_date = self.trunc_func(coerce_date(date))
+        date_str   = start_date.strftime(self.date_fmt)
+
+        return '{}_{}'.format(self.table_name, date_str)
+
+
+class DayPartitioner(DatePartitioner):
+    interval   = days(1)
+
+    def trunc_func(self, date):
+        return to_day(date)
+
+
+class WeekPartitioner(DatePartitioner):
+    interval   = days(7)
+
+    def trunc_func(self, date):
+        return to_week(date)
+
+class MonthPartitioner(DatePartitioner):
+    interval   = days(32)
+
+    def trunc_func(self, date):
+        return to_month(date)
+
+
 def create_partition(conn, table_name, partition_name, range_values = None, key_values = None):
+    if table_exists(conn, partition_name):
+        return
+
     sql = generate_partition_sql(table_name, partition_name, range_values, key_values)
     execute(conn, sql)
 
