@@ -17,7 +17,9 @@ class PartitionerTestCase(PgTestCase):
 
     def create_test_table(self):
         execute(self.conn, """
-            DROP TABLE IF EXISTS part_table;
+            DROP TABLE IF EXISTS part_table CASCADE;
+            DROP SCHEMA IF EXISTS partitions;
+            CREATE SCHEMA partitions;
             CREATE TABLE part_table (
                 datefield TIMESTAMP,
                 meta      INT
@@ -221,18 +223,23 @@ class PgPartitionTest(PartitionerTestCase):
 class PgDatePartitionerTest(PartitionerTestCase):
     def test_partition_name__day_partitioner(self):
         partitioner = DayPartitioner('part_table', 'date_field')
-        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'part_table_20140404')
-        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'part_table_20140504')
+        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'public.part_table_20140404')
+        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'public.part_table_20140504')
 
     def test_partition_name__week_partitioner(self):
         partitioner = WeekPartitioner('part_table', 'date_field')
-        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'part_table_20140331')
-        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'part_table_20140428')
+        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'public.part_table_20140331')
+        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'public.part_table_20140428')
 
     def test_partition_name__month_partitioner(self):
         partitioner = MonthPartitioner('part_table', 'date_field')
-        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'part_table_20140401')
-        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'part_table_20140501')
+        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'public.part_table_20140401')
+        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'public.part_table_20140501')
+
+    def test_partition_name__schema_support(self):
+        partitioner = DayPartitioner('part_table', 'date_field', schema = 'partitions')
+        self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'partitions.part_table_20140404')
+        self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'partitions.part_table_20140504')
 
     def test_valid_partition__no_retention_period(self):
         set_now("2014-04-04 00:01:23")
@@ -278,7 +285,7 @@ class PgDatePartitionerTest(PartitionerTestCase):
 
     def test_actually_creates_partition(self):
         self.create_test_table()
-        partitioner = DayPartitioner('part_table', 'datefield')
+        partitioner = DayPartitioner('part_table', 'datefield', schema = 'partitions')
 
         for date in [ '2014-05-05 00:00:00', '2014-05-05 23:59:59', '2014-05-06 00:00:01', ]:
             self.insert_row(partitioner.find_or_create_partition(self.conn, date), date, 1)
@@ -304,7 +311,7 @@ class PgDatePartitionerTest(PartitionerTestCase):
 
         self.assertSqlResults(self.conn, """
             SELECT *
-            FROM part_table_20140505
+            FROM partitions.part_table_20140505
             ORDER BY datefield
         """,
             [ 'datefield',            'meta',  ],
@@ -314,7 +321,7 @@ class PgDatePartitionerTest(PartitionerTestCase):
 
         self.assertSqlResults(self.conn, """
             SELECT *
-            FROM part_table_20140506
+            FROM partitions.part_table_20140506
             ORDER BY datefield
         """,
             [ 'datefield',            'meta',  ],

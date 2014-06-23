@@ -18,8 +18,9 @@ class UnretainedPartitionError(Exception): pass
 
 
 class DatePartitioner(object):
-    def __init__(self, table_name, date_field, date_type = 'timestamp', date_fmt = "%Y%m%d", reject_future = True, retention_period = None):
+    def __init__(self, table_name, date_field, date_type = 'timestamp', date_fmt = "%Y%m%d", schema = 'public', reject_future = True, retention_period = None):
         self.table_name       = table_name
+        self.schema           = schema
         self.date_field       = date_field
         self.date_type        = date_type
         self.date_fmt         = date_fmt
@@ -60,7 +61,7 @@ class DatePartitioner(object):
         start_date = self.trunc_func(coerce_date(date))
         date_str   = start_date.strftime(self.date_fmt)
 
-        return '{}_{}'.format(self.table_name, date_str)
+        return '{}.{}_{}'.format(self.schema, self.table_name, date_str)
 
 
 class DayPartitioner(DatePartitioner):

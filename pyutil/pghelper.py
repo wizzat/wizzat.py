@@ -66,14 +66,23 @@ def relation_info(conn, relname, relkind = 'r'):
 
     This method requires postgresql
     """
+
+    if '.' in relname:
+        relschema, relname = relname.split('.')
+    else:
+        relschema = 'public'
+
     return fetch_results(conn, """
         SELECT *
         FROM pg_class
+            INNER JOIN pg_namespace
+                ON pg_class.relnamespace = pg_namespace.oid
         WHERE relname = %(relname)s
             AND relkind = %(relkind)s
     """,
-        relname = relname,
-        relkind = relkind,
+        relname   = relname,
+        relschema = relschema,
+        relkind   = relkind,
     )
 
 def table_columns(conn, table_name):
