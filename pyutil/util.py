@@ -169,14 +169,10 @@ def load_json_paths(*paths):
     """
         JSON parses the first existing path.  This is generally intended to be used as follows:
 
-        from pyutil.decorators import memoize
-
-        @memoize()
         def get_config():
             return load_json_paths(
-                "~/prod_app_config",
-                "~/dev_app_config",
-                "~/test_app_config",
+                os.environ['ENV_OVERRIDE'],
+                "~/default_location",
             )
     """
     path = first_existing_path(*paths)

@@ -6,17 +6,16 @@ except ImportError:
 
 import psycopg2
 from pyutil.testutil import *
-from pyutil import pghelper
-from pyutil.pgtestutil import *
 from pyutil.pgpartition import *
 from pyutil.dateutil import *
 from pyutil.pghelper import *
+from testcase import DBTestCase
 
-class PartitionerTestCase(PgTestCase):
+class PartitionerTestCase(DBTestCase):
     setup_database = True
 
     def create_test_table(self):
-        execute(self.conn, """
+        execute(self.conn(), """
             DROP TABLE IF EXISTS part_table CASCADE;
             DROP SCHEMA IF EXISTS partitions;
             CREATE SCHEMA partitions;
@@ -25,7 +24,6 @@ class PartitionerTestCase(PgTestCase):
                 meta      INT
             );
         """)
-        self.conn.commit()
 
     def insert_row(self, partition_name, datefield = None, meta = None):
         sql = """
@@ -38,7 +36,7 @@ class PartitionerTestCase(PgTestCase):
             )
         """.format(partition_name = partition_name)
 
-        execute(self.conn, sql,
+        execute(self.conn(), sql,
             datefield = datefield,
             meta      = meta,
         )
@@ -71,18 +69,18 @@ class PgPartitionTest(PartitionerTestCase):
     def test_partition_sql__actually_works(self):
         self.create_test_table()
 
-        create_partition(self.conn, 'part_table', 'part_table_20140505', range_values = dict(
+        create_partition(self.conn(), 'part_table', 'part_table_20140505', range_values = dict(
             field = 'datefield',
             start = coerce_day(coerce_date('2014-05-05 00:00:00')),
             stop  = coerce_day(coerce_date('2014-05-06 00:00:00')),
         ))
 
-        self.assertTrue(table_exists(self.conn, 'part_table_20140505'))
+        self.assertTrue(table_exists(self.conn(), 'part_table_20140505'))
 
     def test_partitions__date_check_constraints_allow_insertion(self):
         self.create_test_table()
 
-        create_partition(self.conn, 'part_table', 'part_table_20140505', range_values = dict(
+        create_partition(self.conn(), 'part_table', 'part_table_20140505', range_values = dict(
             field = 'datefield',
             start = coerce_day(coerce_date('2014-05-05 00:00:00')),
             stop  = coerce_day(coerce_date('2014-05-06 00:00:00')),
@@ -91,7 +89,7 @@ class PgPartitionTest(PartitionerTestCase):
         for date in [ '2014-05-05 00:00:00', '2014-05-05 12:00:00', '2014-05-05 23:59:59', ]:
             self.insert_row('part_table_20140505', date, 1)
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM part_table
             ORDER BY datefield
@@ -105,7 +103,7 @@ class PgPartitionTest(PartitionerTestCase):
     def test_partitions__date_check_constraints_work(self):
         self.create_test_table()
 
-        create_partition(self.conn, 'part_table', 'part_table_20140505', range_values = dict(
+        create_partition(self.conn(), 'part_table', 'part_table_20140505', range_values = dict(
             field = 'datefield',
             start = coerce_day(coerce_date('2014-05-05 00:00:00')),
             stop  = coerce_day(coerce_date('2014-05-06 00:00:00')),
@@ -117,13 +115,13 @@ class PgPartitionTest(PartitionerTestCase):
     def test_partitions__kv_check_constraints_allow_insertion(self):
         self.create_test_table()
 
-        create_partition(self.conn, 'part_table', 'part_table_1', range_values = dict(
+        create_partition(self.conn(), 'part_table', 'part_table_1', range_values = dict(
             field = 'meta',
             start = 1,
             stop  = 2,
         ))
 
-        create_partition(self.conn, 'part_table', 'part_table_2', range_values = dict(
+        create_partition(self.conn(), 'part_table', 'part_table_2', range_values = dict(
             field = 'meta',
             start = 2,
             stop  = 3,
@@ -135,7 +133,7 @@ class PgPartitionTest(PartitionerTestCase):
         for date in range(3):
             self.insert_row('part_table_2', None, 2)
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM part_table
             ORDER BY meta, datefield
@@ -149,7 +147,7 @@ class PgPartitionTest(PartitionerTestCase):
             [ 2,       ],
         )
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM only part_table_1
             ORDER BY meta, datefield
@@ -163,13 +161,13 @@ class PgPartitionTest(PartitionerTestCase):
     def test_partitions__kv_check_constraints_work(self):
         self.create_test_table()
 
-        create_partition(self.conn, 'part_table', 'part_table_1', range_values = dict(
+        create_partition(self.conn(), 'part_table', 'part_table_1', range_values = dict(
             field = 'meta',
             start = 1,
             stop  = 2,
         ))
 
-        create_partition(self.conn, 'part_table', 'part_table_2', range_values = dict(
+        create_partition(self.conn(), 'part_table', 'part_table_2', range_values = dict(
             field = 'meta',
             start = 2,
             stop  = 3,
@@ -181,7 +179,7 @@ class PgPartitionTest(PartitionerTestCase):
     def test_partitions__multiple_constraints(self):
         self.create_test_table()
 
-        create_partition(self.conn, 'part_table', 'part_table_1', range_values = [
+        create_partition(self.conn(), 'part_table', 'part_table_1', range_values = [
             dict(
                 field = 'datefield',
                 start = coerce_day(coerce_date('2014-05-05 00:00:00')),
@@ -197,7 +195,7 @@ class PgPartitionTest(PartitionerTestCase):
     def test_partitions__multiple_constraints_work(self):
         self.create_test_table()
 
-        create_partition(self.conn, 'part_table', 'part_table_20140505_1', range_values = [
+        create_partition(self.conn(), 'part_table', 'part_table_20140505_1', range_values = [
             dict(
                 field = 'datefield',
                 start = coerce_day(coerce_date('2014-05-05 00:00:00')),
@@ -209,16 +207,13 @@ class PgPartitionTest(PartitionerTestCase):
                 stop  = 2,
             ),
         ])
-        self.conn.commit()
 
         self.insert_row('part_table_20140505_1', '2014-05-05 01:02:03', 1)
         with self.assertRaises(psycopg2.IntegrityError):
             self.insert_row('part_table_20140505_1', '2014-05-05 01:02:03', 2)
-        self.conn.commit()
 
         with self.assertRaises(psycopg2.IntegrityError):
             self.insert_row('part_table_20140505_1', '2014-05-06 01:02:03', 1)
-        self.conn.commit()
 
 class PgDatePartitionerTest(PartitionerTestCase):
     def test_partition_name__day_partitioner(self):
@@ -266,31 +261,21 @@ class PgDatePartitionerTest(PartitionerTestCase):
     def test_complains_if_base_table_does_not_exist(self):
         partitioner = DayPartitioner('part_table', 'date_field')
 
-        execute(self.conn, """
-            DROP TABLE IF EXISTS part_table;
+        execute(self.conn(), """
+            DROP TABLE IF EXISTS part_table CASCADE;
         """)
 
         with self.assertRaises(PgProgrammingError):
-            partitioner.find_or_create_partition(self.conn, '2014-04-04 23:59:59')
-
-    def test_complains_if_base_table_does_not_exist(self):
-        partitioner = DayPartitioner('part_table', 'date_field')
-
-        execute(self.conn, """
-            DROP TABLE IF EXISTS part_table;
-        """)
-
-        with self.assertRaises(PgProgrammingError):
-            partitioner.find_or_create_partition(self.conn, '2014-04-04 23:59:59')
+            partitioner.find_or_create_partition(self.conn(), '2014-04-04 23:59:59')
 
     def test_actually_creates_partition(self):
         self.create_test_table()
         partitioner = DayPartitioner('part_table', 'datefield', schema = 'partitions')
 
         for date in [ '2014-05-05 00:00:00', '2014-05-05 23:59:59', '2014-05-06 00:00:01', ]:
-            self.insert_row(partitioner.find_or_create_partition(self.conn, date), date, 1)
+            self.insert_row(partitioner.find_or_create_partition(self.conn(), date), date, 1)
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM only part_table
             ORDER BY datefield
@@ -298,7 +283,7 @@ class PgDatePartitionerTest(PartitionerTestCase):
             [ 'datefield',            'meta',  ],
         )
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM part_table
             ORDER BY datefield
@@ -309,7 +294,7 @@ class PgDatePartitionerTest(PartitionerTestCase):
             [ '2014-05-06 00:00:01',  1,       ],
         )
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM partitions.part_table_20140505
             ORDER BY datefield
@@ -319,7 +304,7 @@ class PgDatePartitionerTest(PartitionerTestCase):
             [ '2014-05-05 23:59:59',  1,       ],
         )
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM partitions.part_table_20140506
             ORDER BY datefield

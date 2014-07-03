@@ -36,6 +36,7 @@ __all__ = [
 PgIntegrityError   = psycopg2.IntegrityError
 PgOperationalError = psycopg2.OperationalError
 PgProgrammingError = psycopg2.ProgrammingError
+PgPoolError        = psycopg2.pool.PoolError
 
 def copy_from(conn, fp, table_name, columns = None):
     """
@@ -209,7 +210,7 @@ class DBTableMeta(type):
 
         for field in dct.get('key_fields', []):
             if field not in dct['fields']:
-                raise DBTableConfigError('key field {} not in fields'.format(dct['id_field']))
+                raise DBTableConfigError('key field {} not in fields'.format(field))
 
         cls.id_cache      = {}
         cls.key_cache     = {}
@@ -441,7 +442,7 @@ class DBTable(object):
 
         # Verify id field didn't change
         if self.id_field:
-            if getattr(self, self.id_field) == self.db_fields[self.id_field]:
+            if getattr(self, self.id_field) != self.db_fields[self.id_field]:
                 raise ValueError("id field {} changed from {} to {}".format(
                     self.id_field,
                     self.db_fields[self.id_field],

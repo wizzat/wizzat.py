@@ -1,8 +1,7 @@
 from pyutil.pghelper import *
 from pyutil.testutil import *
-from pyutil.pgtestutil import *
 from pyutil.util import *
-import psycopg2
+from testcase import DBTestCase
 
 # In some kind of project, you would probably want to define these in a centralized location, such as models.py
 class FooTable(DBTable):
@@ -23,25 +22,25 @@ class BarTable(DBTable):
         'c',
     )
 
-class DBTableTest(PgTestCase):
+class DBTableTest(DBTestCase):
     setup_database = True
 
     def setUp(self):
         super(DBTableTest, self).setUp()
-        FooTable.conn = self.conn
-        BarTable.conn = self.conn
+        FooTable.conn = self.db_mgr.getconn('conn')
+        BarTable.conn = self.db_mgr.getconn('conn')
 
-        execute(self.conn, "DROP TABLE IF EXISTS foo")
-        execute(self.conn, "CREATE TABLE foo (a INTEGER, b INTEGER DEFAULT 1)")
+        execute(self.conn(), "DROP TABLE IF EXISTS foo")
+        execute(self.conn(), "CREATE TABLE foo (a INTEGER, b INTEGER DEFAULT 1)")
 
-        execute(self.conn, "DROP TABLE IF EXISTS bar")
-        execute(self.conn, "CREATE TABLE bar (a INTEGER PRIMARY KEY, b INTEGER, c INTEGER)")
-        self.conn.commit()
+        execute(self.conn(), "DROP TABLE IF EXISTS bar")
+        execute(self.conn(), "CREATE TABLE bar (a INTEGER PRIMARY KEY, b INTEGER, c INTEGER)")
+        self.conn().commit()
 
     def test_find_by(self):
-        execute(self.conn, "INSERT INTO foo (a, b) VALUES (1, 2)")
-        execute(self.conn, "INSERT INTO foo (a, b) VALUES (1, 3)")
-        execute(self.conn, "INSERT INTO foo (a, b) VALUES (2, 3)")
+        execute(self.conn(), "INSERT INTO foo (a, b) VALUES (1, 2)")
+        execute(self.conn(), "INSERT INTO foo (a, b) VALUES (1, 3)")
+        execute(self.conn(), "INSERT INTO foo (a, b) VALUES (2, 3)")
 
         self.assertEqual(sorted([ x.get_dict() for x in FooTable.find_by(a = 1) ]), sorted([
             { 'a' : 1, 'b' : 2 },
@@ -59,7 +58,9 @@ class DBTableTest(PgTestCase):
         self.assertEqual(f3.to_dict(), { "a" : 1, "b" : 3, })
         self.assertEqual(f4.to_dict(), { "a" : 2, "b" : 4, })
 
-        self.assertSqlResults(self.conn, """
+        FooTable.conn.commit()
+
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM foo
             ORDER BY a, b
@@ -76,10 +77,10 @@ class DBTableTest(PgTestCase):
         self.assertEqual(f1.b, 1)
 
     def test_insert__already_exists(self):
-        with self.assertRaises(psycopg2.IntegrityError):
+        with self.assertRaises(PgIntegrityError):
             f1 = BarTable(a = 1, b = 2, c = 3).update()
             f2 = BarTable(a = 1, b = 2, c = 3).update()
-        self.conn.rollback()
+        self.conn().rollback()
 
     def test_update(self):
         f1 = FooTable(a = 1, b = 2).update()
@@ -87,7 +88,7 @@ class DBTableTest(PgTestCase):
         f3 = FooTable(a = 2, b = 4).update()
         f1.commit()
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM foo
             ORDER BY a, b
@@ -102,7 +103,7 @@ class DBTableTest(PgTestCase):
         f1.update()
         f1.commit()
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM foo
             ORDER BY a, b
@@ -117,8 +118,9 @@ class DBTableTest(PgTestCase):
     def test_update__inserts_when_not_in_database(self):
         f1 = FooTable(a = 1, b = 2)
         f1.update()
+        f1.conn.commit()
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM foo
             ORDER BY a, b
@@ -141,7 +143,7 @@ class DBTableTest(PgTestCase):
         self.assertEqual(len(f1.delete()), 2)
         f1.commit()
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM foo
             ORDER BY a, b
@@ -157,7 +159,7 @@ class DBTableTest(PgTestCase):
         self.assertEqual(len(f1.delete()), 2)
         f1.commit()
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM foo
             ORDER BY a, b
@@ -172,7 +174,7 @@ class DBTableTest(PgTestCase):
         f1.delete()
         f1.commit()
 
-        self.assertSqlResults(self.conn, """
+        self.assertSqlResults(self.conn(), """
             SELECT *
             FROM bar
             ORDER BY a, b
@@ -189,9 +191,9 @@ class DBTableTest(PgTestCase):
         f1 = BarTable(a = 1, b = 2, c = 3).update()
         f2 = BarTable(a = 2, b = 2, c = 3).update()
         f3 = BarTable(a = 3, b = 2, c = 3).update()
-        self.conn.commit()
+        BarTable.conn.commit()
 
         f1.rowlock()
 
-        with self.assertRaises(psycopg2.OperationalError):
-            execute(self.mgr.getconn("conn2"), "select * from bar for update nowait")
+        with self.assertRaises(PgOperationalError):
+            execute(self.db_mgr.getconn("conn2"), "select * from bar for update nowait")

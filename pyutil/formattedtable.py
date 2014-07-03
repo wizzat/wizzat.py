@@ -51,7 +51,7 @@ def tableize_grid(header, rows):
     if not rows:
         return "[]"
 
-    table = texttable.Texttable()
+    table = texttable.Texttable(120)
     table.header(header)
     for row in rows:
         table.add_row([ formatted_value(x) for x in row ])
@@ -74,7 +74,7 @@ def tableize_obj_list(fields, obj_list):
     if not obj_list or not fields:
         return "[]"
 
-    table = texttable.Texttable()
+    table = texttable.Texttable(120)
     table.header(fields)
     for obj in obj_list:
         table.add_row([ formatted_value(obj[field]) for field in fields ])
