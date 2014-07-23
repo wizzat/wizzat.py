@@ -21,6 +21,7 @@ __all__ = [
     'drop_table',
     'execute',
     'fetch_results',
+    'fetch_one',
     'iter_results',
     'nextval',
     'relation_info',

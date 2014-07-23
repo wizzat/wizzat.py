@@ -3,6 +3,7 @@ __all__ = [
     'execute',
     'iter_results',
     'fetch_results',
+    'fetch_one',
 ]
 
 _log_func = None
@@ -42,7 +43,8 @@ def execute(conn, sql, **bind_params):
 def iter_results(conn, sql, **bind_params):
     """
     Delays fetching the SQL results into memory until iteration
-    Keeps memory footprint low
+    Keeps memory footprint low, but means you cannot run another query
+    on this connection.
     """
     global _log_func
     try:
@@ -58,7 +60,7 @@ def iter_results(conn, sql, **bind_params):
 
 def fetch_results(conn, sql, **bind_params):
     """
-    Immediatly fetches the SQL results into memory
+    Immediately fetches the SQL results into memory
     Trades memory for the ability to immediately execute another query
     """
     global _log_func
@@ -69,6 +71,23 @@ def fetch_results(conn, sql, **bind_params):
 
         cur.execute(sql, bind_params)
         return cur.fetchall()
+    finally:
+        cur.close()
+
+def fetch_one(conn, sql, **bind_params):
+    """
+    Immediately fetches the SQL results into memory, and verifies that there is exactly one result
+    """
+    global _log_func
+    try:
+        cur = conn.cursor()
+        if _log_func:
+            _log_func(cur, sql, bind_params)
+
+        cur.execute(sql, bind_params)
+        results = cur.fetchall()
+        assert len(results) == 1
+        return results[0]
     finally:
         cur.close()
 
