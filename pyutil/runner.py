@@ -15,6 +15,7 @@ class RunnerBase(object):
     """
     log_root = '/mnt/logs'
     process_name = None
+    log_stdout = False
     sig_handlers = {
         signal.SIGTERM : 'sig_term',
         signal.SIGINT  : 'sig_int',
@@ -96,7 +97,10 @@ class RunnerBase(object):
     def setup_logging(self):
         cls = type(self)
         self.process_name = self.process_name or "{}.{}".format(cls.__module__, cls.__name__)
-        self.log_file = os.path.join(self.log_root, self.process_name + '.log')
+        if self.log_stdout:
+            self.log_file = None
+        else:
+            self.log_file = os.path.join(self.log_root, self.process_name + '.log')
 
         mkdirp(self.log_root)
 
