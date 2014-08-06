@@ -330,6 +330,11 @@ class DBTable(object):
         return cls.find_by_key(*args) or cls.create(*args, **kwargs)
 
     @classmethod
+    def find_or_create_many(cls, *rows):
+        for row in rows:
+            return cls.find_or_create(*row)
+
+    @classmethod
     def find_by(cls, for_update = False, nowait = False, **kwargs):
         """
         Returns rows which match all key/value pairs
@@ -388,19 +393,25 @@ class DBTable(object):
 
         return self
 
-    def update(self):
+    def should_update(self):
+        curr_values = self.get_dict()
+        return any(curr_values[field] != self.db_fields[field] for field in self.fields)
+
+    def update(self, force = False):
         """
         Ensures the row exists is serialized to the database
         """
         if self.db_fields:
-            self.on_update()
-            return self._update()
+            if force or self.should_update():
+                self.on_update()
+                self._update(force)
+                self.after_update()
         else:
             self.on_insert()
-            obj = self._insert()
+            self._insert(force)
             self.after_insert()
 
-            return obj
+        return self
 
     def on_insert(self):
         pass
@@ -408,7 +419,13 @@ class DBTable(object):
     def after_insert(self):
         pass
 
-    def _insert(self):
+    def on_update(self):
+        pass
+
+    def after_update(self):
+        pass
+
+    def _insert(self, force = False):
         """
         Inserts a row into the database, and returns that row.
         """
@@ -427,12 +444,7 @@ class DBTable(object):
         for k, v in self.db_fields.iteritems():
             setattr(self, k, copy.deepcopy(v))
 
-        return self
-
-    def on_update(self):
-        pass
-
-    def _update(self):
+    def _update(self, force = False):
         """
         Updates a row in the database, and returns that row.
         """
@@ -453,7 +465,7 @@ class DBTable(object):
         # Verify key fields didn't change
         if self.key_fields:
             for key_field in self.key_fields:
-                if getattr(self, key_field) != self.db_fields[key_field]:
+                if not force and getattr(self, key_field) != self.db_fields[key_field]:
                     raise ValueError("key field {} changed from {} to {}".format(
                         key_field,
                         self.db_fields[key_field],
@@ -487,8 +499,6 @@ class DBTable(object):
         assert self.db_fields
         for k, v in self.db_fields.iteritems():
             setattr(self, k, copy.deepcopy(v))
-
-        return self
 
     def delete(self):
         """
