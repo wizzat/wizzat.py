@@ -1,4 +1,5 @@
 from pyutil.pghelper import *
+from pyutil.dbtable import *
 from pyutil.testutil import *
 from pyutil.util import *
 from testcase import DBTestCase
