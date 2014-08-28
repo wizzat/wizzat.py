@@ -232,7 +232,7 @@ class PgDatePartitionerTest(PartitionerTestCase):
         self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'public.part_table_20140501')
 
     def test_partition_name__schema_support(self):
-        partitioner = DayPartitioner('part_table', 'date_field', schema = 'partitions')
+        partitioner = DayPartitioner('part_table', 'date_field', part_schema = 'partitions')
         self.assertEqual(partitioner.partition_name('2014-04-04 01:02:03'), 'partitions.part_table_20140404')
         self.assertEqual(partitioner.partition_name('2014-05-04 01:02:03'), 'partitions.part_table_20140504')
 
@@ -268,9 +268,19 @@ class PgDatePartitionerTest(PartitionerTestCase):
         with self.assertRaises(PgProgrammingError):
             partitioner.find_or_create_partition(self.conn(), '2014-04-04 23:59:59')
 
+    def test_subpartitioning_support(self):
+        self.create_test_table()
+        master_partitioner = DayPartitioner('part_table', 'datefield', part_schema = 'partitions')
+        new_partition = master_partitioner.find_or_create_partition(self.conn(), "2014-05-05 00:00:00")
+
+        part_schema, part_name = new_partition.split('.')
+
+        subpartitioner = DayPartitioner(part_name, 'datefield', table_schema = part_schema, part_schema = 'partitions')
+        subpartitioner.find_or_create_partition(self.conn(), "2014-05-05 00:00:00")
+
     def test_actually_creates_partition(self):
         self.create_test_table()
-        partitioner = DayPartitioner('part_table', 'datefield', schema = 'partitions')
+        partitioner = DayPartitioner('part_table', 'datefield', part_schema = 'partitions')
 
         for date in [ '2014-05-05 00:00:00', '2014-05-05 23:59:59', '2014-05-06 00:00:01', ]:
             self.insert_row(partitioner.find_or_create_partition(self.conn(), date), date, 1)

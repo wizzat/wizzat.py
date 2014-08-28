@@ -18,9 +18,17 @@ class UnretainedPartitionError(Exception): pass
 
 
 class DatePartitioner(object):
-    def __init__(self, table_name, date_field, date_type = 'timestamp', date_fmt = "%Y%m%d", schema = 'public', reject_future = True, retention_period = None):
+    def __init__(self, table_name, date_field,
+        date_type        = 'timestamp',
+        date_fmt         = "%Y%m%d",
+        table_schema     = 'public',
+        part_schema      = 'public',
+        reject_future    = True,
+        retention_period = None
+    ):
         self.table_name       = table_name
-        self.schema           = schema
+        self.table_schema     = table_schema
+        self.part_schema      = part_schema
         self.date_field       = date_field
         self.date_type        = date_type
         self.date_fmt         = date_fmt
@@ -35,13 +43,17 @@ class DatePartitioner(object):
 
         partition_name = self.partition_name(date)
 
-        pyutil.pgpartition.create_partition(conn, self.table_name, partition_name, range_values = [{
+        pyutil.pgpartition.create_partition(conn, self.full_table_name, partition_name, range_values = [{
             'field' : self.date_field,
             'start' : date,
             'stop'  : date + self.interval,
         }])
 
         return partition_name
+
+    @property
+    def full_table_name(self):
+        return '{}.{}'.format(self.table_schema, self.table_name)
 
     def valid_partition(self, date):
         date = coerce_date(date)
@@ -61,7 +73,7 @@ class DatePartitioner(object):
         start_date = self.trunc_func(coerce_date(date))
         date_str   = start_date.strftime(self.date_fmt)
 
-        return '{}.{}_{}'.format(self.schema, self.table_name, date_str)
+        return '{}.{}_{}'.format(self.part_schema, self.table_name, date_str)
 
 
 class DayPartitioner(DatePartitioner):

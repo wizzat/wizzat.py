@@ -43,7 +43,7 @@ class DBTableTest(DBTestCase):
         execute(self.conn(), "INSERT INTO foo (a, b) VALUES (1, 3)")
         execute(self.conn(), "INSERT INTO foo (a, b) VALUES (2, 3)")
 
-        self.assertEqual(sorted([ x.get_dict() for x in FooTable.find_by(a = 1) ]), sorted([
+        self.assertEqual(sorted([ x.to_dict() for x in FooTable.find_by(a = 1) ]), sorted([
             { 'a' : 1, 'b' : 2 },
             { 'a' : 1, 'b' : 3 },
         ]))

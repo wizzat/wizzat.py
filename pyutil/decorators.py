@@ -1,5 +1,16 @@
-import functools, time, traceback, logging, sys, threading, StringIO
-from util import swallow, OfflineError, assert_online
+import StringIO
+import collections
+import functools
+import itertools
+import sys
+import threading
+import time
+from util import (
+    swallow,
+    OfflineError,
+    assert_online,
+    set_defaults
+)
 
 __all__ = [
     'BenchResults',
@@ -29,13 +40,6 @@ class MemoizeResults(object):
     """
     Shared state memoize() result container.
     """
-    class MemoStat(object):
-        calls     = 0
-        miss      = 0
-        nulls     = 0
-        expire    = 0
-        exec_time = 0
-
     caches = {}
     stats  = {}
 
@@ -53,18 +57,6 @@ class MemoizeResults(object):
                 stat.clear()
 
     @classmethod
-    def cache_size(cls, stats):
-        """
-            Returns the cache size for native python objects.
-            Does not work on Pypy.
-        """
-        # Pypy compatibility
-        try:
-            return sys.getsizeof(stats.cache)
-        except TypeError:
-            return 0
-
-    @classmethod
     def format_stats(cls):
         """
             Calculates the statistics for all memoized() things.
@@ -73,11 +65,6 @@ class MemoizeResults(object):
             - Calls
             - Hits
             - Misses
-            - Nulls
-            - Miss Time
-            - Max Time Saved
-            - Cache Items
-            - Cache Size
         """
         import texttable
         table = texttable.Texttable(0)
@@ -86,30 +73,14 @@ class MemoizeResults(object):
             'Calls',
             'Hits',
             'Misses',
-            'Nulls',
-            'Miss Time',
-            'Max Time Saved',
-            'Cache Items',
-            'Cache Size',
         ])
 
-        def cache_size(stats):
-            try:
-                return sys.getsizeof(stats.cache)
-            except TypeError:
-                return 0
-
-        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1].calls):
+        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1]['call']):
             table.add_row([
                 func.__name__,                                                      # 'Function Name',
-                stats.calls,                                                        # 'Calls',
-                stats.calls - stats.miss,                                           # 'Hits',
-                stats.miss,                                                         # 'Misses',
-                stats.nulls,                                                        # 'Nulls',
-                stats.exec_time,                                                    # 'Miss Time',
-                (stats.calls - stats.miss) * (stats.exec_time / (stats.miss or 1)), # 'Max Time Saved',
-                len(stats.cache),                                                   # 'Cache Items',
-                cls.cache_size(stats),                                              # 'Cache Size',
+                stats['call'],                                                      # 'Calls',
+                stats['call'] - stats['miss'],                                      # 'Hits',
+                stats['miss'],                                                      # 'Misses',
             ])
 
         return "Memoize Stats By Function\n\n" + table.draw()
@@ -123,11 +94,6 @@ class MemoizeResults(object):
             - Calls
             - Hits
             - Misses
-            - Nulls
-            - Miss Time
-            - Max Time Saved
-            - Cache Items
-            - Cache Size
         """
         fp = StringIO.StringIO()
         fp.write(",".join([
@@ -135,47 +101,24 @@ class MemoizeResults(object):
             'Calls',
             'Hits',
             'Misses',
-            'Nulls',
-            'Miss Time',
-            'Max Time Saved',
-            'Cache Items',
-            'Cache Size',
         ]))
         fp.write("\n")
 
-        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1].calls):
+        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1]['call']):
             fp.write(",".join([ str(x) for x in [
                 func.__name__,                                                      # 'Function Name',
-                stats.calls,                                                        # 'Calls',
-                stats.calls - stats.miss,                                           # 'Hits',
-                stats.miss,                                                         # 'Misses',
-                stats.nulls,                                                        # 'Nulls',
-                stats.exec_time,                                                    # 'Miss Time',
-                (stats.calls - stats.miss) * (stats.exec_time / (stats.miss or 1)), # 'Max Time Saved',
-                len(stats.cache),                                                   # 'Cache Items',
-                cls.cache_size(stats),                                              # 'Cache Size',
+                stats['call'],                                                      # 'Calls',
+                stats['call'] - stats['miss'],                                      # 'Hits',
+                stats['miss'],                                                      # 'Misses',
             ] ]))
             fp.write("\n")
 
         return fp.getvalue()
 
-def construct_memo_func(stats = False, until = False, kw = False, ignore_nulls = False, threads = False, verbose = False, sync = False):
-    if stats:
-        log_call      = "stats.calls     += 1"
-        log_miss      = "stats.miss      += 1"
-        log_expire    = "stats.expire    += 1"
-        log_exec_time = "stats.exec_time += time.time() - start"
-    else:
-        log_call      = ""
-        log_miss      = ""
-        log_expire    = ""
-        log_exec_time = ""
+def release(lock):
+    swallow(RuntimeError, lock.release)
 
-    if ignore_nulls and stats:
-        log_nulls = "if value == None: stats.nulls += 1"
-    else:
-        log_nulls = ""
-
+def construct_cache_func_definition(threads, disable_kw, obj, verbose, **kwargs):
     if threads:
         threadlock   = "lock.acquire()"
         threadunlock = "release(lock)"
@@ -183,125 +126,170 @@ def construct_memo_func(stats = False, until = False, kw = False, ignore_nulls =
         threadlock   = ""
         threadunlock = "pass"
 
-    if sync:
-        sync       = "lock.acquire()"
-        syncunlock = "release(lock)"
+    if disable_kw:
+        setup_key = "args"
     else:
-        sync       = ""
-        syncunlock = "pass"
+        setup_key = "(args, tuple(sorted(izip(kwargs.iteritems()))))"
 
-    if until:
-        test_value  = "ts, value  = cache[key]"
-        store_value = "cache[key] = (ts, value)"
-        template    = """
+    if obj:
+        generate_cache = 'if not hasattr(args[0], "__memoize_cache__"): setattr(args[0], "__memoize_cache__", gen_cache())'
+        get_cache = 'cache = args[0].__memoize_cache__'
+    else:
+        generate_cache = ''
+        get_cache = ''
+
+    result = """
 @functools.wraps(func)
 def memo_func(*args, **kwargs):
-    {log_call}
-    {setup_key}
-    {start_clock}
-    {sync}
+    {generate_cache}
+    {get_cache}
+    stats['call'] += 1
+    key = {setup_key}
+    {threadlock}
     try:
-        {test_value}
-        if ts < start:
-            {log_expire}
-            {log_miss}
-            ts    = expire_func()
-            value = func(*args, **kwargs)
-            {log_exec_time}
-            {threadlock}
-            {store_value}
-            {log_nulls}
-        return value
+        return cache[key]
     except KeyError:
-        {log_miss}
-        ts    = expire_func()
-        value = func(*args, **kwargs)
-        {log_exec_time}
-        {threadlock}
-        {store_value}
-        {log_nulls}
+        stats['miss'] += 1
+        value = cache[key] = func(*args, **kwargs)
         return value
     finally:
         {threadunlock}
-        {syncunlock}
-"""
-    else:
-        test_value  = "value      = cache[key]"
-        store_value = "cache[key] = value"
-        template    = """
-@functools.wraps(func)
-def memo_func(*args, **kwargs):
-    {log_call}
-    {setup_key}
-    {start_clock}
-    {sync}
-    try:
-        {test_value}
-        return value
-    except KeyError:
-        {log_miss}
-        value = func(*args, **kwargs)
-        {log_exec_time}
-        {threadlock}
-        {store_value}
-        {log_nulls}
-        return value
-    finally:
-        {threadunlock}
-        {syncunlock}
-"""
-
-    if until or stats:
-        start_clock = "start = time.time()"
-    else:
-        start_clock = ""
-
-    if ignore_nulls:
-        store_value = "if value != None: {}".format(store_value)
-
-    if kw:
-        setup_key = "key = (args, tuple(sorted(zip(kwargs.iteritems()))))"
-    else:
-        setup_key = "key = args"
+""".format(**locals())
 
     if verbose:
-        print template.format(**locals())
+        print result
 
-    return template.format(**locals())
+    return result
 
-def memo_func(func, Stats, Cache, stats = False, until = False, kw = False, ignore_nulls = False, verbose = False, threads = False, sync = False):
-    template = construct_memo_func(stats = stats, until = until, kw = kw, ignore_nulls = ignore_nulls, verbose = verbose, threads = threads, sync = sync)
+def construct_cache_obj_definition(max_size, max_bytes, until, ignore_nulls, verbose, **kwargs):
+    if max_size or max_bytes:
+        superclass     = 'collections.OrderedDict'
+        remove_old_key = "if key in self: self.pop(key)" # Enables LRU behavior
+    else:
+        superclass     = 'dict'
+        remove_old_key = ''
 
-    def release(lock):
-        swallow(RuntimeError, lock.release)
+    if max_bytes:
+        byte_filter = "while self and self.current_size > self.max_bytes: self.popitem(False)"
+    else:
+        byte_filter = ""
 
+    if max_size:
+        size_filter = "while self and len(self) > self.max_size: self.popitem(False)"
+    else:
+        size_filter = ""
+
+    if ignore_nulls:
+        null_filter = "if value != None: "
+    else:
+        null_filter = ""
+
+    if until:
+        until_check = "if expiration < time.time(): del self[key]; raise KeyError(key)"
+        until_call  = "expiration = self.expire_func()"
+        result_expr = "(expiration, value)"
+    else:
+        until_check = ""
+        until_call  = ""
+        result_expr = "value"
+
+    definition = """
+class Cache({superclass}):
+    current_size = 0
+    max_bytes    = max_bytes
+    max_size     = max_size
+    expire_func  = staticmethod(expire_func)
+
+    def __delitem__(self, key):
+        value = {superclass}.__getitem__(self, key)
+        self.current_size -= sys.getsizeof(value)
+        {superclass}.__delitem__(self, key)
+
+    def __getitem__(self, key):
+        {result_expr} = {superclass}.__getitem__(self, key)
+        {until_check}
+        return value
+
+    def __setitem__(self, key, value):
+        {remove_old_key}
+        {until_call}
+        {null_filter}{superclass}.__setitem__(self, key, {result_expr}); self.current_size += sys.getsizeof(value)
+        {byte_filter}
+        {size_filter}
+""".format(**locals())
+
+    if verbose:
+        print definition
+
+    return definition
+
+def create_cache_obj(func, **kwargs):
+    definition = construct_cache_obj_definition(
+        kwargs['max_size'],
+        kwargs['max_bytes'],
+        kwargs['until'],
+        kwargs['ignore_nulls'],
+        kwargs['verbose'],
+    )
+    namespace = {
+        '__name__'    : 'memoize_func__{}'.format(func.__name__),
+        'expire_func' : kwargs['until'],
+        'max_size'    : kwargs['max_size'],
+        'max_bytes'   : kwargs['max_bytes'],
+        'collections' : collections,
+        'sys'         : sys,
+        'time'        : time,
+    }
+
+    exec definition in namespace
+    return namespace['Cache']()
+
+def create_cache_func(func, **kwargs):
+    cache_obj = func.cache = MemoizeResults.caches[func] = create_cache_obj(func, **kwargs)
+    stats_obj = func.stats = MemoizeResults.stats[func]  = collections.Counter()
+
+    definition = construct_cache_func_definition(**kwargs)
     namespace = {
         '__name__'    : 'memoize_func_{}'.format(func.__name__),
         'functools'   : functools,
-        'time'        : time,
-        'expire_func' : until,
         'release'     : release,
         'func'        : func,
-        'stats'       : Stats,
-        'cache'       : Cache,
+        'stats'       : stats_obj,
+        'cache'       : cache_obj,
+        'izip'        : itertools.izip,
         'lock'        : threading.RLock(),
+        'gen_cache'   : lambda: create_cache_obj(func, **kwargs),
     }
 
-    exec template.format(**locals()) in namespace
-
+    exec definition in namespace
     return namespace['memo_func']
 
-def memoize(until = None, kw = None, ignore_nulls = None, stats = None, verbose = False, threads = False, sync = False):
+memoize_default_options = {
+    'until'        : None,
+    'disable_kw'   : False,
+    'ignore_nulls' : False,
+    'verbose'      : False,
+    'threads'      : False,
+    'obj'          : False,
+    'max_size'     : 0,
+    'max_bytes'    : 0,
+}
+
+def memoize(**kwargs):
     """
     Memoize Function.
     Arguments:
-        until:        memoize until time specified (seconds, using time.time)
-        stats:        collect memoize stats around hits, misses, and execution time
-        kw:           memoize around kwargs.  There is a hashing performance penalty here.
-        ignore_nulls: don't memoize null return values
-        verbose:      print the constructed memoize function
-        threads:      thread safety locks around updating cache
-        sync:         syncronize around lookup as well
+        until:        func, memoize until time specified (seconds, using time.time)
+        disable_kw    bool, do not memoize around kwargs.  This is a significant performance benefit.
+        ignore_nulls: bool, do not store null values in the cache.  This can cause later lookups for the same key.
+        verbose:      bool, print the constructed memoize function and cache obj
+        threads:      bool, thread safety locks around updating cache
+        obj:          bool, memoize to the first argument (generally, self) instead of the global cache.
+                            This cache can be cleared by calling obj.__memoize_cache__.clear(), and will not be
+                            cleared when clearing the global cache.
+        max_bytes:    int,  maximum number of bytes to keep in the cache, as calculated by sys.getsizeof(result).
+                            Items are evicted in LRU order.
+        max_size      int,  maximum number of items to keep in the cache.  Items are evicted in LRU order.
 
     Examples:
 
@@ -310,28 +298,31 @@ def memoize(until = None, kw = None, ignore_nulls = None, stats = None, verbose 
     def func(): pass
 
     # Respect kwargs for memoize
-    @memoize(until = lambda: time.time()+3600, kw=True)
-    def func(**kwargs): pass
+    @memoize(disable_kw=True)
+    def func(arg, **kwargs): time.sleep(10)
 
-    # Respect kwargs for memoize, syncronize, memoize for an hour
-    @memoize(until = lambda: time.time()+3600, kw=True, sync=True)
-    def func(**kwargs): pass
+    func(1, a = 1) # waits 10 seconds
+    func(1, b = 1) # returns instantly
 
-    Inspired by http://wiki.python.org/moin/PythonDecoratorLibrary
+    # Respect kwargs for memoize, thread safe, memoize for an hour
+    @memoize(until = lambda: time.time()+3600, threads=True)
+    def func(*args, **kwargs): pass
+
+    # Memoize to the first argument (self) instead
+    class Foo(object):
+        @memoize(obj=True)
+        def method(self, arg1, arg2, **kwargs):
+            return arg1 + arg2 + len(kwargs)
     """
-    def wrap(func):
-        Cache = func.cache = MemoizeResults.caches[func] = {}
-        Stats = func.stats = MemoizeResults.stats[func]  = MemoizeResults.MemoStat()
-        Stats.cache = Cache
 
-        return memo_func(func, Stats, Cache,
-            until        = until,
-            kw           = kw,
-            ignore_nulls = ignore_nulls,
-            stats        = stats,
-            verbose      = verbose,
-            sync         = sync,
-        )
+    global memoize_default_options
+
+    kwargs = set_defaults(kwargs, memoize_default_options)
+    if any(x not in memoize_default_options for x in kwargs.iterkeys()):
+        raise TypeError("Received unexpected arguments to @memoize")
+
+    def wrap(func):
+        return create_cache_func(func, **kwargs)
     return wrap
 
 def memoize_property(func):
