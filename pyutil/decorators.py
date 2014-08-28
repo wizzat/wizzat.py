@@ -325,17 +325,7 @@ def memoize(**kwargs):
         return create_cache_func(func, **kwargs)
     return wrap
 
-def memoize_property(func):
-    cache_name = '__cache_{}'.format(func.__name__)
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        obj = args[0]
-        if not hasattr(obj, cache_name):
-            rv = func(*args, **kwargs)
-            setattr(obj, cache_name, rv)
-        return getattr(obj, cache_name)
-    return wrapper
+memoize_property = memoize(obj=True)
 
 class BenchResults(object):
     """
