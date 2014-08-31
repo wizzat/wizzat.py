@@ -1,4 +1,4 @@
-import unittest, difflib, texttable, functools, os
+import unittest, difflib, texttable, functools, os, json
 from sqlhelper import fetch_results
 from formattedtable import tableize_grid, tableize_obj_list
 from util import assert_online, OfflineError, reset_online, set_online, is_online
@@ -69,13 +69,12 @@ class TestCase(unittest.TestCase):
                     db_conn.commit()
 
     def assertJSONEqual(self, obj1, obj2):
-        obj1_rows = json.dumps(obj1, indent=4, sort_keys=True)
-        obj2_rows = json.dumps(obj2, indent=4, sort_keys=True)
+        expected = json.dumps(obj1, indent=4, sort_keys=True)
+        actual = json.dumps(obj2, indent=4, sort_keys=True)
 
         diff = list(difflib.unified_diff(expected.split('\n'), actual.split('\n'), n=20))
         if diff:
-            raise AssertionError("Assert failed for sql\n{sql}\n\n{diff}".format(
-                sql = sql,
+            raise AssertionError("Assert JSON failed:\n{diff}".format(
                 diff = '\n'.join(diff),
             ))
 
