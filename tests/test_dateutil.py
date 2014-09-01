@@ -140,3 +140,30 @@ class TestDateUtil(TestCase):
 
         self.assertEqual(to_year(datetime.datetime(2013, 12, 31, 23, 59, 59, 99999)), datetime.datetime(2013, 1, 1, 0, 0, 0, 0))
         self.assertEqual(to_year(datetime.datetime(2014, 1, 1, 0, 0, 0)), datetime.datetime(2014, 1, 1, 0, 0, 0, 0))
+
+    def test_to_local_tz(self):
+        set_local_tz("US/Pacific")
+
+        # Daylight savings begins 2014-03-09 02:00:00
+        self.assertEqual(to_local_tz(coerce_date("2014-03-09 09:00:00")), coerce_date("2014-03-09 01:00:00"))
+        self.assertEqual(to_local_tz(coerce_date("2014-03-09 09:59:59")), coerce_date("2014-03-09 01:59:59"))
+        self.assertEqual(to_local_tz(coerce_date("2014-03-09 10:00:00")), coerce_date("2014-03-09 03:00:00"))
+
+        # Daylight savings ends 2014-11-02 02:00:00
+        self.assertEqual(to_local_tz(coerce_date("2014-11-02 08:00:00")), coerce_date("2014-11-02 01:00:00"))
+        self.assertEqual(to_local_tz(coerce_date("2014-11-02 08:59:59")), coerce_date("2014-11-02 01:59:59"))
+        self.assertEqual(to_local_tz(coerce_date("2014-11-02 09:00:00")), coerce_date("2014-11-02 01:00:00"))
+        self.assertEqual(to_local_tz(coerce_date("2014-11-02 10:00:00")), coerce_date("2014-11-02 02:00:00"))
+
+    def test_from_local_tz(self):
+        set_local_tz("US/Pacific")
+
+        # Daylight savings begins 2014-03-09 02:00:00
+        self.assertEqual(from_local_tz(coerce_date("2014-03-09 01:00:00")), coerce_date("2014-03-09 09:00:00"))
+        self.assertEqual(from_local_tz(coerce_date("2014-03-09 01:59:59")), coerce_date("2014-03-09 09:59:59"))
+        self.assertEqual(from_local_tz(coerce_date("2014-03-09 03:00:00")), coerce_date("2014-03-09 10:00:00"))
+
+        # Daylight savings ends 2014-11-02 02:00:00
+        self.assertEqual(from_local_tz(coerce_date("2014-11-02 01:00:00")), coerce_date("2014-11-02 09:00:00"))
+        self.assertEqual(from_local_tz(coerce_date("2014-11-02 01:59:59")), coerce_date("2014-11-02 09:59:59"))
+        self.assertEqual(from_local_tz(coerce_date("2014-11-02 02:00:00")), coerce_date("2014-11-02 10:00:00"))

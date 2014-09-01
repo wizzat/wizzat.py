@@ -1,4 +1,9 @@
-import datetime, types, calendar, contextlib, numbers
+import calendar
+import contextlib
+import datetime
+import numbers
+import pytz
+import types
 
 __all__ = [
     'clear_date_formats',
@@ -13,6 +18,7 @@ __all__ = [
     'format_week',
     'from_epoch',
     'from_epoch_millis',
+    'from_local_tz',
     'hours',
     'intervals',
     'minutes',
@@ -21,6 +27,7 @@ __all__ = [
     'register_date_format',
     'reset_now',
     'seconds',
+    'set_local_tz',
     'set_millis',
     'set_millis_ctx',
     'set_now',
@@ -28,6 +35,7 @@ __all__ = [
     'to_epoch',
     'to_epoch_millis',
     'to_hour',
+    'to_local_tz',
     'to_minute',
     'to_month',
     'to_quarter',
@@ -39,6 +47,7 @@ __all__ = [
     'weeks',
     'yesterday',
 ]
+
 
 _now = None
 def set_now(dt):
@@ -374,3 +383,30 @@ def intervals(duration, dt=None):
         dt = to_epoch(coerce_date(dt))
 
     return int(1 + dt/duration) * duration
+
+_utc      = pytz.utc
+_local_tz = None
+def set_local_tz(tz_str):
+    """
+    Sets the local timezone string ex: "US/Pacific"
+    """
+    global _local_tz
+    _local_tz = pytz.timezone(tz_str)
+
+def to_local_tz(dt):
+    """
+    Converts the input dt to the local tz from UTC (set with set_local_tz)
+    This is generally a display step since time zones are a dirty lie.
+    """
+    if not dt:
+        return None
+    return _utc.localize(dt).astimezone(_local_tz).replace(tzinfo = None)
+
+def from_local_tz(dt):
+    """
+    Converts the input dt from the local tz to UTC (set with set_local_tz)
+    This is generally a data scrubbing step since time zones are a dirty lie.
+    """
+    if not dt:
+        return None
+    return _local_tz.localize(dt).astimezone(_utc).replace(tzinfo=None)
