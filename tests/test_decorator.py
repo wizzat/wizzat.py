@@ -186,6 +186,14 @@ class MemoizeTest(TestCase):
 
         self.assertTrue(time.time() - start > .75)
 
+    def test_option__disabled(self):
+        @memoize(disabled = True)
+        def func(*args, **kwargs):
+            return True
+
+        self.assertTrue(not hasattr(func, 'cache'))
+        self.assertTrue(not hasattr(func, 'stats'))
+
     def test_option__verbose(self):
         # This test intentionally empty because verbose is primarily useful
         # for debugging purposes and breaking it will be ~obvious~.

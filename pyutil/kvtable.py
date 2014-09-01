@@ -1,5 +1,5 @@
+import decorators
 from util import set_defaults
-
 
 class KVTableError(Exception): pass
 class KVTableConfigError(KVTableError): pass
@@ -33,10 +33,21 @@ class KVTableMeta(type):
                 if key not in dct['fields']:
                     raise KVTableConfigError('{} (key field) is not in fields'.format(key))
 
-        cls.key_cache     = {}
-        cls.default_funcs = {}
-        cls._conn         = None
 
+        if dct.get('memoize'):
+            cls.id_cache = decorators.create_cache_obj(
+                max_size  = dct.get('memoize_size', 0),
+                max_bytes = dct.get('memoize_bytes', 0),
+            )
+
+            cls.key_cache = decorators.create_cache_obj(
+                max_size  = dct.get('memoize_size', 0),
+                max_bytes = dct.get('memoize_bytes', 0),
+            )
+
+
+        cls.default_funcs = {}
+        cls._conn = None
         for field in dct['fields']:
             func_name = 'default_{}'.format(field)
 
@@ -62,7 +73,21 @@ class KVTableMeta(type):
 
 class KVTable(object):
     """
-    Abstract micro-ORM for working with KV stores
+    Abstract micro-ORM for working with KV stores.
+
+    Params:
+    table_name:         string, the name of the "table" (object type) to query
+    key_fields:         list[string], the names of the key fields (used in construction of the obj key)
+    key_func:           Optionally provide your own key_func (usually generated from key_fields)
+    fields:             list[string], the names of all fields on the object
+    --
+    memoize:            bool, caches objects from the database locally
+    memoize_size:       int, maximum number of objects to cache from the database (LRU ejection)
+    memoize_bytes:      int, maximum size objects to cache from the database (LRU ejection).
+                        Note that there are two caches, and while references are shared the
+                        cache size here is not absolute.
+    default_{field}:    func, define functions for default behaviors.  These functions are executed
+                        in order of definition in the fields array.
     """
     __metaclass__ = KVTableMeta
     table_name    = ''
@@ -188,6 +213,7 @@ class KVTable(object):
 
 try:
     import couchbase
+
     class CBTable(object):
         """
         This is a micro-ORM for working with Couchbase.

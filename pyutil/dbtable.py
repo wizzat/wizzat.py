@@ -1,4 +1,5 @@
 import copy, types
+import decorators
 from pghelper import *
 from util import set_defaults
 
@@ -44,10 +45,19 @@ class DBTableMeta(type):
             if field not in dct['fields']:
                 raise DBTableConfigError('key field {} not in fields'.format(field))
 
-        cls.id_cache      = {}
-        cls.key_cache     = {}
+        if dct.get('memoize'):
+            cls.id_cache = decorators.create_cache_obj(
+                max_size  = dct.get('memoize_size', 0),
+                max_bytes = dct.get('memoize_bytes', 0),
+            )
+
+            cls.key_cache = decorators.create_cache_obj(
+                max_size  = dct.get('memoize_size', 0),
+                max_bytes = dct.get('memoize_bytes', 0),
+            )
+
+        cls._conn = None
         cls.default_funcs = {}
-        cls._conn         = None
 
         for field in dct['fields']:
             func_name = 'default_{}'.format(field)
@@ -60,6 +70,21 @@ class DBTable(object):
     This is a micro-ORM for the purposes of not having dependencies on Django or SQLAlchemy.
     Philosophically, it also supports merely the object abstraction and super simple sql generation.
     It requires full knowledge of SQL.
+
+    Params:
+    table_name:         string, the name of the table to query
+    id_field:           string, the name of the id field (generally a surrogate key)
+    key_fields:         list[string], the names of the key fields (generally primary or unique key)
+    fields:             list[string], the names of all fields on the object
+    --
+    memoize:            bool, caches objects from the database locally
+    memoize_size:       int, maximum number of objects to cache from the database (LRU ejection)
+    memoize_bytes:      int, maximum size objects to cache from the database (LRU ejection).
+                        Note that there are two caches, and while references are shared the
+                        cache size here is not absolute.
+    default_{field}:    func, define functions for default behaviors.  These functions are executed
+                        in order of definition in the fields array.
+
     """
     __metaclass__ = DBTableMeta
     memoize       = False

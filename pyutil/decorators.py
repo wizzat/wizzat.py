@@ -22,6 +22,7 @@ __all__ = [
     'skip_offline',
     'skip_performance',
     'skip_unfinished',
+    'create_cache_obj',
 ]
 
 def coroutine(func):
@@ -223,7 +224,9 @@ class Cache({superclass}):
 
     return definition
 
-def create_cache_obj(func, **kwargs):
+def create_cache_obj(**kwargs):
+    kwargs = expand_memoize_args(kwargs)
+
     definition = construct_cache_obj_definition(
         kwargs['max_size'],
         kwargs['max_bytes'],
@@ -231,8 +234,8 @@ def create_cache_obj(func, **kwargs):
         kwargs['ignore_nulls'],
         kwargs['verbose'],
     )
+
     namespace = {
-        '__name__'    : 'memoize_func__{}'.format(func.__name__),
         'expire_func' : kwargs['until'],
         'max_size'    : kwargs['max_size'],
         'max_bytes'   : kwargs['max_bytes'],
@@ -245,12 +248,12 @@ def create_cache_obj(func, **kwargs):
     return namespace['Cache']()
 
 def create_cache_func(func, **kwargs):
-    cache_obj = func.cache = MemoizeResults.caches[func] = create_cache_obj(func, **kwargs)
+    kwargs = expand_memoize_args(kwargs)
+    cache_obj = func.cache = MemoizeResults.caches[func] = create_cache_obj(**kwargs)
     stats_obj = func.stats = MemoizeResults.stats[func]  = collections.Counter()
 
     definition = construct_cache_func_definition(**kwargs)
     namespace = {
-        '__name__'    : 'memoize_func_{}'.format(func.__name__),
         'functools'   : functools,
         'release'     : release,
         'func'        : func,
@@ -258,7 +261,7 @@ def create_cache_func(func, **kwargs):
         'cache'       : cache_obj,
         'izip'        : itertools.izip,
         'lock'        : threading.RLock(),
-        'gen_cache'   : lambda: create_cache_obj(func, **kwargs),
+        'gen_cache'   : lambda: create_cache_obj(**kwargs),
     }
 
     exec definition in namespace
@@ -271,9 +274,19 @@ memoize_default_options = {
     'verbose'      : False,
     'threads'      : False,
     'obj'          : False,
+    'disabled'     : False,
     'max_size'     : 0,
     'max_bytes'    : 0,
 }
+
+def expand_memoize_args(kwargs):
+    global memoize_default_options
+    kwargs = set_defaults(kwargs, memoize_default_options)
+    if any(x not in memoize_default_options for x in kwargs.iterkeys()):
+        raise TypeError("Received unexpected arguments to @memoize")
+
+    return kwargs
+
 
 def memoize(**kwargs):
     """
@@ -290,6 +303,7 @@ def memoize(**kwargs):
         max_bytes:    int,  maximum number of bytes to keep in the cache, as calculated by sys.getsizeof(result).
                             Items are evicted in LRU order.
         max_size      int,  maximum number of items to keep in the cache.  Items are evicted in LRU order.
+        disabled      bool, disable memoization and return the original function instead of the memoize wrapper
 
     Examples:
 
@@ -314,15 +328,12 @@ def memoize(**kwargs):
         def method(self, arg1, arg2, **kwargs):
             return arg1 + arg2 + len(kwargs)
     """
-
-    global memoize_default_options
-
-    kwargs = set_defaults(kwargs, memoize_default_options)
-    if any(x not in memoize_default_options for x in kwargs.iterkeys()):
-        raise TypeError("Received unexpected arguments to @memoize")
-
-    def wrap(func):
-        return create_cache_func(func, **kwargs)
+    if kwargs.get('disabled', None):
+        def wrap(func):
+            return func
+    else:
+        def wrap(func):
+            return create_cache_func(func, **kwargs)
     return wrap
 
 memoize_property = memoize(obj=True)
