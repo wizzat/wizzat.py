@@ -136,8 +136,9 @@ class DBTable(object):
 
     @classmethod
     def clear_cache(cls):
-        cls.id_cache.clear()
-        cls.key_cache.clear()
+        if cls.memoize:
+            cls.id_cache.clear()
+            cls.key_cache.clear()
 
     @classmethod
     def uncache_obj(cls, obj):

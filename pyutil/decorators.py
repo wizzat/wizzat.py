@@ -130,9 +130,9 @@ def construct_cache_func_definition(threads, disable_kw, obj, verbose, **kwargs)
         threadunlock = "pass"
 
     if disable_kw:
-        setup_key = "args"
+        setup_key = "(func, args)"
     else:
-        setup_key = "(args, tuple(sorted(izip(kwargs.iteritems()))))"
+        setup_key = "(func, args, tuple(sorted(izip(kwargs.iteritems()))))"
 
     if obj:
         generate_cache = 'if not hasattr(args[0], "__memoize_cache__"): setattr(args[0], "__memoize_cache__", gen_cache())'
