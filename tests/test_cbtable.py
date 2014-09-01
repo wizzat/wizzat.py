@@ -38,7 +38,6 @@ class CBTableTest(DBTestCase):
 
         return C
 
-    @skip_unless_env('TEST_CB')
     def test_add(self):
         cls = self.new_subclass()
         self.assertEqual(cls.find_by_key(1, 2), None)
@@ -57,7 +56,6 @@ class CBTableTest(DBTestCase):
                 data2 = 'def',
             )
 
-    @skip_unless_env('TEST_CB')
     def test_checks_cas_values(self):
         cls = self.new_subclass()
         self.assertEqual(cls.find_by_key(1, 2), None)
@@ -76,7 +74,6 @@ class CBTableTest(DBTestCase):
         with self.assertRaises(couchbase.exceptions.KeyExistsError):
             obj.update()
 
-    @skip_unless_env('TEST_CB')
     def test_find_by_key(self):
         cls = self.new_subclass()
         self.assertEqual(cls.find_by_key(1, 2), None)
@@ -91,7 +88,6 @@ class CBTableTest(DBTestCase):
 
         self.assertEqual(cls.find_by_key(1, 2)._data, expected_data)
 
-    @skip_unless_env('TEST_CB')
     def test_find_or_create(self):
         cls = self.new_subclass()
 
@@ -111,7 +107,6 @@ class CBTableTest(DBTestCase):
         self.assertEqual(obj.data2, 3)
         self.assertEqual(obj._changed, False)
 
-    @skip_unless_env('TEST_CB')
     def test_memoize(self):
         cls = self.new_subclass(memoize_cls = True)
         obj1 = cls.find_or_create(1,2,
