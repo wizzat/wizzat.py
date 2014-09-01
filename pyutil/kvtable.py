@@ -1,6 +1,14 @@
 import decorators
 from util import set_defaults
 
+__all__ = [
+    'KVTableError',
+    'KVTableConfigError',
+    'KVTableImmutableFieldError',
+    'KVTable',
+    'DictKVTable',
+]
+
 class KVTableError(Exception): pass
 class KVTableConfigError(KVTableError): pass
 class KVTableImmutableFieldError(KVTableError): pass
@@ -210,46 +218,30 @@ class KVTable(object):
         """
         self._kv_data = self._delete(force)
 
+class DictKVTable(KVTable):
+    table_name = ''
+    memoize    = False
+    key_fields = []
+    fields     = []
+    kv_store   = {}
 
-try:
-    import couchbase
+    @classmethod
+    def _find_by_key(cls, key):
+        data = cls.kv_store.get(key, None)
 
-    class CBTable(object):
-        """
-        This is a micro-ORM for working with Couchbase.
-        """
-        __metaclass__ = KVTableMeta
-        memoize       = False
-        table_name    = ''
-        key_fields    = []
-        fields        = []
-        persist_to    = 0
-        replicate_to  = 0
+        if data:
+            return True, data
+        else:
+            return False, None
 
-        @classmethod
-        def _find_by_key(cls, kv_key):
-            rv = cls.conn.get(kv_key, quiet=True)
+    def _insert(self, force=False):
+        self.kv_store[self._key] = self._data
+        return True
 
-            return rv, rv.value
+    def _update(self, force=False):
+        self.kv_store[self._key] = self._data
+        return True
 
-        def _insert(self, force=False):
-            return self.conn.add(self._key, self._data,
-                persist_to   = self.persist_to,
-                replicate_to = self.replicate_to,
-            )
-
-        def _update(self, force=False):
-            return self.conn.set(self._key, self._data,
-                persist_to   = self.persist_to,
-                replicate_to = self.replicate_to,
-                cas          = self._kv_data.cas,
-            )
-
-        def _delete(self, force=False):
-            return self.conn.delete(self._key,
-                persist_to   = self.persist_to,
-                replicate_to = self.replicate_to,
-                cas          = self._kv_data.cas,
-            )
-except ImportError:
-    pass
+    def _delete(self, force=False):
+        del self.kv_store[self._key]
+        return None

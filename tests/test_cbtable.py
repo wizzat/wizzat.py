@@ -1,13 +1,25 @@
-from pyutil.kvtable import *
+import couchbase
+from pyutil.cbtable import *
 from pyutil.testutil import *
 from pyutil.util import *
 from testcase import DBTestCase
 
-class KVTableTest(DBTestCase):
+class CBTableTest(DBTestCase):
+    def setUp(self):
+        self.conn = couchbase.Couchbase().connect(
+            host    = 'localhost',
+            port    = 8091,
+            bucket  = 'default',
+            timeout = 5.0,
+        )
+
+        self.conn.delete('tbl/1/2', quiet=True)
+
     def new_subclass(self, keys = None, data_fields = None, memoize_cls = False, tbl_name = 'tbl'):
-        class C(DictKVTable):
+        class C(CBTable):
             table_name = tbl_name
             memoize    = memoize_cls
+            conn       = self.conn
             key_fields = keys or [
                 'key1',
                 'key2',
@@ -20,42 +32,46 @@ class KVTableTest(DBTestCase):
                 'data2',
             ]
 
-            kv_store = {}
-
             def default_data2(self):
                 return self.key1 + self.key2
 
         return C
 
-    def test_key_func(self):
+    def test_add(self):
         cls = self.new_subclass()
-        self.assertEqual(cls.key_func([ 1, 2 ]), 'tbl/1/2')
-        self.assertEqual(cls.key_func([ 1, 2, 3 ]), 'tbl/1/2')
+        self.assertEqual(cls.find_by_key(1, 2), None)
+        expected_data = {
+            'key1'  : 1,
+            'key2'  : 2,
+            'data1' : 'abc',
+            'data2' : 'def',
+        }
 
-        with self.assertRaises(ValueError):
-            cls.key_func([ 1, ])
+        self.conn.set('tbl/1/2', expected_data)
 
-    def test_keys_must_be_fields(self):
-        with self.assertRaises(KVTableConfigError):
-            cls = self.new_subclass([ 'key', ], [ 'data' ])
+        with self.assertRaises(couchbase.exceptions.KeyExistsError):
+            cls.create(1,2,
+                data1 = 'abc',
+                data2 = 'def',
+            )
 
-    def test_key_types(self):
-        with self.assertRaises(KVTableConfigError):
-            cls = self.new_subclass({ 'key' : 'abc' })
+    def test_checks_cas_values(self):
+        cls = self.new_subclass()
+        self.assertEqual(cls.find_by_key(1, 2), None)
+        expected_data = {
+            'key1'  : 1,
+            'key2'  : 2,
+            'data1' : 'abc',
+            'data2' : 'def',
+        }
 
-    def test_data_types(self):
-        with self.assertRaises(KVTableConfigError):
-            cls = self.new_subclass(None, { 'data' : 'abc' })
+        obj = cls.find_or_create(1,2)
+        self.conn.set('tbl/1/2', expected_data)
 
-    def test_table_name_data_type(self):
-        with self.assertRaises(KVTableConfigError):
-            cls = self.new_subclass(tbl_name = None)
+        obj.data1 = 'ha ha ha'
 
-        with self.assertRaises(KVTableConfigError):
-            cls = self.new_subclass(tbl_name = { 'abc' })
-
-        with self.assertRaises(KVTableConfigError):
-            cls = self.new_subclass(tbl_name = 1)
+        with self.assertRaises(couchbase.exceptions.KeyExistsError):
+            obj.update()
 
     def test_find_by_key(self):
         cls = self.new_subclass()
@@ -67,12 +83,13 @@ class KVTableTest(DBTestCase):
             'data2' : 'def',
         }
 
-        cls.kv_store['tbl/1/2'] = expected_data
+        self.conn.set('tbl/1/2', expected_data)
 
         self.assertEqual(cls.find_by_key(1, 2)._data, expected_data)
 
     def test_find_or_create(self):
         cls = self.new_subclass()
+
         obj = cls.find_or_create(1,2)
 
         self.assertEqual(obj._key, 'tbl/1/2')
@@ -88,28 +105,6 @@ class KVTableTest(DBTestCase):
         self.assertEqual(obj.data1, None)
         self.assertEqual(obj.data2, 3)
         self.assertEqual(obj._changed, False)
-
-    def test_changed_on_update(self):
-        cls = self.new_subclass()
-        obj = cls.find_or_create(1,2, data1 = 'abc')
-        obj.data1 = 'abc'
-        self.assertEqual(obj._changed, False)
-        obj.data1 = 'def'
-        self.assertEqual(obj._changed, True)
-        obj.update()
-
-        self.assertEqual(obj.kv_store['tbl/1/2'], {
-            'key1'  : 1,
-            'key2'  : 2,
-            'data1' : 'def',
-            'data2' : 3,
-        })
-
-    def test_update__rejects_key_changes(self):
-        cls = self.new_subclass()
-        obj = cls.find_or_create(1,2, data1 = 'abc')
-        with self.assertRaises(KVTableImmutableFieldError):
-            obj.key1 = 2
 
     def test_memoize(self):
         cls = self.new_subclass(memoize_cls = True)
