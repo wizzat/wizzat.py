@@ -470,19 +470,6 @@ def skip_offline(func):
         return retval
     return wrapper
 
-def skip_performance(func):
-    """
-    This decorator is meant for tests.  It checks for $ENV{PERFORMANCE_TEST} and will issue skipTest without it.
-    """
-    @functools.wraps(func)
-    def wrapper(self):
-        if not os.environ.get('PERFORMANCE_TEST', False):
-            self.skipTest("----- PERFORMANCE TEST -----")
-        else:
-            return func(self)
-
-    return wrapper
-
 def skip_unfinished(func):
     """
     This decorator is meant for tests.  It automatically issues a skipTest.
@@ -502,8 +489,10 @@ def skip_unless_env(env_var):
         @functools.wraps(func)
         def wrapper(self):
             if not os.environ.get(env_var, False):
-                self.skipTest("----- ENV {} -----".format(env_var))
+                self.skipTest("----- SKIP ENV {} -----".format(env_var))
             else:
                 return func(self)
         return wrapper
     return skip_unless_env
+
+skip_performance = skip_unless_env('PERFORMANCE_TEST')

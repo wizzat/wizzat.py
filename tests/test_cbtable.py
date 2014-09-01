@@ -6,6 +6,7 @@ from pyutil.decorators import *
 from testcase import DBTestCase
 
 class CBTableTest(DBTestCase):
+    @skip_unless_env('TEST_CB')
     def setUp(self):
         self.conn = couchbase.Couchbase().connect(
             host    = 'localhost',
@@ -13,7 +14,6 @@ class CBTableTest(DBTestCase):
             bucket  = 'default',
             timeout = 5.0,
         )
-
         self.conn.delete('tbl/1/2', quiet=True)
 
     def new_subclass(self, keys = None, data_fields = None, memoize_cls = False, tbl_name = 'tbl'):
