@@ -99,9 +99,12 @@ class KVTable(object):
     """
     __metaclass__ = KVTableMeta
     table_name    = ''
-    memoize       = False
     key_fields    = []
     fields        = []
+
+    memoize       = False
+    memoize_bytes = 0
+    memoize_size  = 0
 
     def __init__(self, key, data, kv_data = None):
         self._key     = key
