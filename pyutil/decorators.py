@@ -2,6 +2,7 @@ import StringIO
 import collections
 import functools
 import itertools
+import os
 import sys
 import threading
 import time
@@ -22,6 +23,7 @@ __all__ = [
     'skip_offline',
     'skip_performance',
     'skip_unfinished',
+    'skip_unless_env',
     'create_cache_obj',
 ]
 
@@ -490,3 +492,18 @@ def skip_unfinished(func):
     def wrapper(self):
         self.skipTest("----- UNFINISHED TEST -----")
     return wrapper
+
+def skip_unless_env(env_var):
+    """
+    This decorator is meant for tests.  It automatically issues a skipTest if
+    """
+
+    def skip_unless_env(func):
+        @functools.wraps(func)
+        def wrapper(self):
+            if not os.environ.get(env_var, False):
+                self.skipTest("----- ENV {} -----".format(env_var))
+            else:
+                return func(self)
+        return wrapper
+    return skip_unless_env
