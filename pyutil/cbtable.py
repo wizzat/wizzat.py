@@ -8,7 +8,13 @@ try:
 
     class CBTable(kvtable.KVTable):
         """
-        This is a micro-ORM for working with Couchbase.
+        This is a micro-ORM for working with Couchbase.  It attempts to work with CAS values
+        as much as possible for maximum safety.  It's relatively easy to structure concurrency
+        around KeyExistsError.
+
+        Relevant options (on top of KVTable options):
+        - replicate_to: int, the number of nodes to replicate the change to
+        - persist_to:   int, the number of nodes to persist (to disk) the change to
         """
         memoize       = False
         table_name    = ''
