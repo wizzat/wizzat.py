@@ -5,9 +5,9 @@ class DBTestCase(wizzat.testutil.TestCase):
     db_info = {
         'host'     : 'localhost',
         'port'     : 5432,
-        'user'     : 'wizzat',
+        'user'     : 'wizzatpy',
         'password' : 'wizzat',
-        'database' : 'wizzat_testdb',
+        'database' : 'wizzatpy_testdb',
         'minconn'  : 0,
         'maxconn'  : 3,
     }

@@ -12,9 +12,7 @@ try:
 
     class S3Table(kvtable.KVTable):
         """
-        This is a micro-ORM for working with Couchbase.  It attempts to work with CAS values
-        as much as possible for maximum safety.  It's relatively easy to structure concurrency
-        around KeyExistsError.
+        This is a micro-ORM for working with S3.
 
         Relevant options (on top of KVTable options):
         - bucket:               The S3 bucket name to store this table in
