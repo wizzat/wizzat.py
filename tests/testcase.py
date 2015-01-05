@@ -1,18 +1,18 @@
-import pyutil.testutil
-import pyutil.pghelper
+import wizzat.testutil
+import wizzat.pghelper
 
-class DBTestCase(pyutil.testutil.TestCase):
+class DBTestCase(wizzat.testutil.TestCase):
     db_info = {
         'host'     : 'localhost',
         'port'     : 5432,
-        'user'     : 'pyutil',
-        'password' : 'pyutil',
-        'database' : 'pyutil_testdb',
+        'user'     : 'wizzat',
+        'password' : 'wizzat',
+        'database' : 'wizzat_testdb',
         'minconn'  : 0,
         'maxconn'  : 3,
     }
 
-    db_mgr = pyutil.pghelper.ConnMgr.default_from_info(**db_info)
+    db_mgr = wizzat.pghelper.ConnMgr.default_from_info(**db_info)
 
     def conn(self, name = 'testconn'):
         conn = self.db_mgr.getconn(name)

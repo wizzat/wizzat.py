@@ -1,8 +1,8 @@
 import couchbase
-from pyutil.cbtable import *
-from pyutil.testutil import *
-from pyutil.util import *
-from pyutil.decorators import *
+from wizzat.cbtable import *
+from wizzat.testutil import *
+from wizzat.util import *
+from wizzat.decorators import *
 from testcase import DBTestCase
 
 class CBTableTest(DBTestCase):

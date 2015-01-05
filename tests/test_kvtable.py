@@ -1,6 +1,6 @@
-from pyutil.kvtable import *
-from pyutil.testutil import *
-from pyutil.util import *
+from wizzat.kvtable import *
+from wizzat.testutil import *
+from wizzat.util import *
 from testcase import DBTestCase
 
 class KVTableTest(DBTestCase):

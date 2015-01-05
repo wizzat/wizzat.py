@@ -1,7 +1,7 @@
-from pyutil.pghelper import *
-from pyutil.dbtable import *
-from pyutil.testutil import *
-from pyutil.util import *
+from wizzat.pghelper import *
+from wizzat.dbtable import *
+from wizzat.testutil import *
+from wizzat.util import *
 from testcase import DBTestCase
 
 # In some kind of project, you would probably want to define these in a centralized location, such as models.py

@@ -1,5 +1,5 @@
-from pyutil.testutil import *
-from pyutil.formattedtable import *
+from wizzat.testutil import *
+from wizzat.formattedtable import *
 
 class FormattedTableTest(TestCase):
     def test_grid(self):

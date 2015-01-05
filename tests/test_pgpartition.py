@@ -5,10 +5,10 @@ except ImportError:
     pass
 
 import psycopg2
-from pyutil.testutil import *
-from pyutil.pgpartition import *
-from pyutil.dateutil import *
-from pyutil.pghelper import *
+from wizzat.testutil import *
+from wizzat.pgpartition import *
+from wizzat.dateutil import *
+from wizzat.pghelper import *
 from testcase import DBTestCase
 
 class PartitionerTestCase(DBTestCase):

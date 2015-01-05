@@ -1,14 +1,14 @@
-from pyutil.testutil import *
-from pyutil import pghelper
+from wizzat.testutil import *
+from wizzat import pghelper
 import psycopg2, psycopg2.extras
 
 class PgHelperTest(TestCase):
     db_info = {
         'host'           : 'localhost',
         'port'           : 5432,
-        'user'           : 'pyutil',
-        'password'       : 'pyutil',
-        'database'       : 'pyutil_testdb',
+        'user'           : 'wizzat',
+        'password'       : 'wizzat',
+        'database'       : 'wizzat_testdb',
         'cursor_factory' : psycopg2.extras.DictCursor,
     }
 

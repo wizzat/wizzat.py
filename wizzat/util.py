@@ -186,7 +186,7 @@ def load_config_paths(*paths):
     """
         ConfigParser.read()s the first existing path.  This is generally intended to be used as follows:
 
-        from pyutil.decorators import memoize
+        from wizzat.decorators import memoize
 
         @memoize()
         def get_config():

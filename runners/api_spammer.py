@@ -1,6 +1,6 @@
 import time, threading, requests, sys, collections, random, json, time
-import pyutil.runner
-from pyutil.mathutil import Percentile
+import wizzat.runner
+from wizzat.mathutil import Percentile
 from multiprocessing.pool import ThreadPool
 
 class RqStats(object):
@@ -42,7 +42,7 @@ Pct 100:\t\t\t{pct_100}ms
         for code, ct in self.status_codes.iteritems():
             print "\t{code}\t\t\t{ct}".format(code = code, ct = ct)
 
-class APISpammer(pyutil.runner.RunnerBase):
+class APISpammer(wizzat.runner.RunnerBase):
     """
     The API spammer takes a series of files with the following format:
 { "url" : "http://localhost:8888/test_endpoint", "post_body" : "{\"abc\":1,\"def\":2}" }

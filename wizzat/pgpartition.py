@@ -1,8 +1,8 @@
 import collections
 import datetime
-import pyutil.pghelper
-from pyutil.dateutil import *
-from pyutil.pghelper import execute, table_exists
+import wizzat.pghelper
+from wizzat.dateutil import *
+from wizzat.pghelper import execute, table_exists
 
 __all__ = [
     'create_partition',
@@ -43,7 +43,7 @@ class DatePartitioner(object):
 
         partition_name = self.partition_name(date)
 
-        pyutil.pgpartition.create_partition(conn, self.full_table_name, partition_name, range_values = [{
+        wizzat.pgpartition.create_partition(conn, self.full_table_name, partition_name, range_values = [{
             'field' : self.date_field,
             'start' : date,
             'stop'  : date + self.interval,

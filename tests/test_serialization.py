@@ -1,5 +1,5 @@
-from pyutil.serialization import *
-from pyutil.testutil import *
+from wizzat.serialization import *
+from wizzat.testutil import *
 import random, zlib, struct
 
 class TestIntSet(TestCase):

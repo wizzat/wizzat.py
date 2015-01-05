@@ -1,7 +1,7 @@
 import os, tempfile
-from pyutil.testutil import *
-from pyutil.runner import *
-from pyutil.util import *
+from wizzat.testutil import *
+from wizzat.runner import *
+from wizzat.util import *
 
 class TestRunnerBase(TestCase):
     def test_basic(self):

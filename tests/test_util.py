@@ -1,6 +1,6 @@
 import datetime, time, os, uuid
-from pyutil.testutil import *
-from pyutil.util import *
+from wizzat.testutil import *
+from wizzat.util import *
 
 class TestUtil(TestCase):
     def test_import_class(self):

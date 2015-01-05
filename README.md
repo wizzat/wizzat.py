@@ -1,4 +1,4 @@
-pyutil
+wizzat.py
 ======
 Python Utilities includes an assortment of decorators, utility methods, and utility classes.  It's intended that this package can
 serve to bootstrap a fresh Python 2 project.
@@ -28,4 +28,4 @@ The most interesting functions are likely:
 
 Documentation is maintained on individual functions
 
-The official repository is http://www.github.com/pyutil
+The official repository is http://www.github.com/wizzat.py

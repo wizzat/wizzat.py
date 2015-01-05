@@ -1,6 +1,6 @@
 import math
-from pyutil.testutil import *
-from pyutil.mathutil import *
+from wizzat.testutil import *
+from wizzat.mathutil import *
 
 class AverageTest(TestCase):
     pass

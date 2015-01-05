@@ -52,7 +52,7 @@ __all__ = [
 _now = None
 def set_now(dt):
     """
-    Sets `pyutil.now()` function to return the specified datetime
+    Sets `wizzat.now()` function to return the specified datetime
     """
     global _now
     _now = coerce_date(dt)
@@ -60,14 +60,14 @@ def set_now(dt):
 def now():
     """
     Returns the current timestamp.
-    Can be manipulated or frozen with `pyutil.set_now` and `pyutil.reset_now`, generally for testing purposes.
+    Can be manipulated or frozen with `wizzat.set_now` and `wizzat.reset_now`, generally for testing purposes.
     """
     global _now
     return _now or datetime.datetime.utcnow()
 
 def reset_now():
     """
-    All future calls to `pyutil.now()` will return the current time as of reset_now()
+    All future calls to `wizzat.now()` will return the current time as of reset_now()
     """
     set_now(None)
     set_now(now())

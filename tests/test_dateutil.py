@@ -1,5 +1,5 @@
-from pyutil.testutil import *
-from pyutil.dateutil import *
+from wizzat.testutil import *
+from wizzat.dateutil import *
 import datetime, time
 
 class TestDateUtil(TestCase):

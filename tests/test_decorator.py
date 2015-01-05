@@ -1,6 +1,6 @@
-from pyutil.decorators import *
-from pyutil.testutil   import *
-import pyutil.decorators
+from wizzat.decorators import *
+from wizzat.testutil   import *
+import wizzat.decorators
 import sys
 import threading
 import time
@@ -200,7 +200,7 @@ class MemoizeTest(TestCase):
         pass
 
     def test_all_options_have_tests(self):
-        for k, v in pyutil.decorators.memoize_default_options.iteritems():
+        for k, v in wizzat.decorators.memoize_default_options.iteritems():
             self.assertTrue(
                 hasattr(self, 'test_option__{}'.format(k)),
                 "Test for {} does not exist".format(k)
