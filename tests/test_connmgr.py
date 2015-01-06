@@ -51,6 +51,13 @@ class ConnMgrTest(DBTestCase):
         self.assertEqual(wizzat.pghelper.table_exists(mgr.a, "foobar"), True)
         self.assertEqual(wizzat.pghelper.table_exists(mgr.b, "foobar"), False)
 
+    def test_str_and_unicode_are_same_connection(self):
+        mgr = wizzat.pghelper.ConnMgr(**self.db_info)
+        c1 = mgr.getconn(str("a"))
+        c2 = mgr.getconn(unicode("a"))
+
+        self.assertTrue(c1 is c2)
+
     def test_commit(self):
         mgr = wizzat.pghelper.ConnMgr(**self.db_info)
         mgr.getconn("a")

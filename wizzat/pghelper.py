@@ -242,8 +242,6 @@ class ConnMgr(object):
         type(self).default_mgr = self
 
     def getconn(self, name):
-        name = unicode(name)
-
         if not hasattr(self, name):
             conn = self.pool.getconn()
             conn.autocommit = False
@@ -253,7 +251,6 @@ class ConnMgr(object):
         return getattr(self, name)
 
     def putconn(self, name, commit = True):
-        name = unicode(name)
         conn = self.connections.pop(name)
         delattr(self, name)
 
