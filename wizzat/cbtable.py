@@ -1,12 +1,17 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 try:
     import couchbase
-    import kvtable
+    import wizzat.kvtable
 
     __all__ = [
         'CBTable',
     ]
 
-    class CBTable(kvtable.KVTable):
+    class CBTable(wizzat.kvtable.KVTable):
         """
         This is a micro-ORM for working with Couchbase.  It attempts to work with CAS values
         as much as possible for maximum safety.  It's relatively easy to structure concurrency

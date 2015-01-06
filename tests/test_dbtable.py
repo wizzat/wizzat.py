@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 from wizzat.pghelper import *
 from wizzat.dbtable import *
 from wizzat.testutil import *
@@ -28,6 +33,7 @@ class DBTableTest(DBTestCase):
 
     def setUp(self):
         super(DBTableTest, self).setUp()
+        self.db_mgr.getconn('conn').rollback()
         FooTable.conn = self.db_mgr.getconn('conn')
         BarTable.conn = self.db_mgr.getconn('conn')
 

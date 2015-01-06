@@ -1,5 +1,10 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import Queue, gzip, time, threading, os, fcntl, shutil, json
-from util import mkdirp
+from wizzat.util import mkdirp
 
 __all__ = [
     'QueueFile',

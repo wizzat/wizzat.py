@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import boto, boto.exception, boto.s3, boto.s3.key, json, time
 from wizzat.s3table import *
 from wizzat.testutil import *

@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, ConfigParser, re
 import json
 
@@ -279,7 +284,7 @@ def import_class(name):
 
         See: http://stackoverflow.com/questions/547829/how-to-dynamically-load-a-python-class
     """
-    if type(name) != str:
+    if not isinstance(name, basestring):
         return name
 
     package    = ".".join(name.split(".")[: - 1])
@@ -332,7 +337,6 @@ def funcs(obj):
     try:
         return [ y for x,y in obj.__dict__.iteritems() if isinstance(y, (types.FunctionType, classmethod)) ]
     except (TypeError, AttributeError) as e:
-        print e
         return []
 
 def filter_keys(keys, dictionary, error = True):

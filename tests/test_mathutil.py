@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import math
 from wizzat.testutil import *
 from wizzat.mathutil import *
@@ -23,7 +28,7 @@ class PercentileTest(TestCase):
         self.assertEqual(p.percentile(1.0), 1009)
 
     def test_percentile_deviation(self):
-        r = range(0, 2**64, 2**64/1000000)
+        r = range(0, 2**64, int(2**64/1000000))
         p = Percentile(*(float(x) for x in r))
 
         for x in xrange(100):

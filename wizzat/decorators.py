@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import StringIO
 import collections
 import functools
@@ -6,7 +11,7 @@ import os
 import sys
 import threading
 import time
-from util import (
+from wizzat.util import (
     swallow,
     OfflineError,
     assert_online,
@@ -160,7 +165,7 @@ def memo_func(*args, **kwargs):
 """.format(**locals())
 
     if verbose:
-        print result
+        print(result)
 
     return result
 
@@ -222,7 +227,7 @@ class Cache({superclass}):
 """.format(**locals())
 
     if verbose:
-        print definition
+        print(definition)
 
     return definition
 

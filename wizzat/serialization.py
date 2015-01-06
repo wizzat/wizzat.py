@@ -1,6 +1,11 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import collections, struct, zlib
-from decorators import *
-from util import chunks
+from wizzat.decorators import *
+from wizzat.util import chunks
 
 __all__ = [
     'pack_iterable',
@@ -11,7 +16,7 @@ __all__ = [
 
 @memoize()
 def structs(code):
-    return [ struct.Struct('<{}{}'.format(ct, code)) for ct in xrange(251) ]
+    return [ struct.Struct(str('<{}{}'.format(ct, code))) for ct in xrange(251) ]
 
 def pack_iterable(itr, type_code, compress = False):
     """
@@ -22,7 +27,7 @@ def pack_iterable(itr, type_code, compress = False):
     for chunk in chunks(list(itr), 250):
         l.append( readers[len(chunk)].pack(*chunk) )
 
-    s = "".join(l)
+    s = str("").join(l)
     return s if not compress else zlib.compress(s)
 
 def unpack_iterable(s, type_code, compressed = False):
@@ -44,7 +49,7 @@ def unpack_iterable(s, type_code, compressed = False):
 
     return output
 
-bmstruct = struct.Struct('<QI')
+bmstruct = struct.Struct(str('<QI'))
 istructs = structs('I')
 def write_int_set(itr, compress = False):
     """
@@ -68,7 +73,7 @@ def write_int_set(itr, compress = False):
         for chunk in chunks(part_indexes, 250):
             output_list.append( istructs[len(chunk)].pack(*chunk) )
 
-    s = "".join(output_list)
+    s = str("").join(output_list)
     return s if not compress else zlib.compress(s)
 
 def read_int_set(s, compressed = False):

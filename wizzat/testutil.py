@@ -1,9 +1,14 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import unittest, difflib, texttable, functools, os, json
-from sqlhelper import fetch_results
-from formattedtable import tableize_grid, tableize_obj_list
-from util import assert_online, OfflineError, reset_online, set_online, is_online
-from dateutil import reset_now
-from decorators import *
+from wizzat.sqlhelper import fetch_results
+from wizzat.formattedtable import tableize_grid, tableize_obj_list
+from wizzat.util import assert_online, OfflineError, reset_online, set_online, is_online
+from wizzat.dateutil import reset_now
+from wizzat.decorators import *
 
 __all__ = [
     'TestCase',

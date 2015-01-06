@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 try:
     from psycopg2cffi import compat
     compat.register()
@@ -7,8 +12,8 @@ except ImportError:
 import copy, tempfile, types, cStringIO
 import psycopg2, psycopg2.extras, psycopg2.pool
 from types import *
-from sqlhelper import *
-from util import set_defaults
+from wizzat.sqlhelper import *
+from wizzat.util import set_defaults
 
 __all__ = [
     #'vacuum',

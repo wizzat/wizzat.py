@@ -1,5 +1,10 @@
-import decorators
-from util import set_defaults
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import wizzat.decorators
+from wizzat.util import set_defaults
 
 __all__ = [
     'KVTableError',
@@ -43,12 +48,12 @@ class KVTableMeta(type):
 
 
         if dct.get('memoize'):
-            cls.id_cache = decorators.create_cache_obj(
+            cls.id_cache = wizzat.decorators.create_cache_obj(
                 max_size  = dct.get('memoize_size', 0),
                 max_bytes = dct.get('memoize_bytes', 0),
             )
 
-            cls.key_cache = decorators.create_cache_obj(
+            cls.key_cache = wizzat.decorators.create_cache_obj(
                 max_size  = dct.get('memoize_size', 0),
                 max_bytes = dct.get('memoize_bytes', 0),
             )

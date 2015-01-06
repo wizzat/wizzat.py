@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 from wizzat.decorators import *
 from wizzat.testutil   import *
 import wizzat.decorators
@@ -230,22 +235,18 @@ class MemoizeTest(TestCase):
         f=F()
 
         for option in self.gen_options():
-            try:
-                @memoize(**option)
-                def func(*args, **kwargs):
-                    return range(3)
+            @memoize(**option)
+            def func(*args, **kwargs):
+                return range(3)
 
-                if not option['obj']:
-                    func()
-                func(f, 2, 3, a = 1, b = 2)
-                func(f, 2, 3, a = 1, b = 3)
-                func(f, 2, 4, a = 1, b = 2)
-                if option['until']:
-                    time.sleep(0.2)
-                func(f, 2, 3, a = 1, b = 3)
-            except Exception as e:
-                print option
-                raise
+            if not option['obj']:
+                func()
+            func(f, 2, 3, a = 1, b = 2)
+            func(f, 2, 3, a = 1, b = 3)
+            func(f, 2, 4, a = 1, b = 2)
+            if option['until']:
+                time.sleep(0.2)
+            func(f, 2, 3, a = 1, b = 3)
 
     def test_memoize_results(self):
         @memoize()
