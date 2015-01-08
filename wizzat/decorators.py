@@ -3,11 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import StringIO
 import collections
 import functools
 import itertools
 import os
+import six
 import sys
 import threading
 import time
@@ -104,7 +104,7 @@ class MemoizeResults(object):
             - Hits
             - Misses
         """
-        fp = StringIO.StringIO()
+        fp = six.moves.cStringIO()
         fp.write(",".join([
             'Function Name',
             'Calls',
@@ -252,7 +252,7 @@ def create_cache_obj(**kwargs):
         'time'        : time,
     }
 
-    exec definition in namespace
+    six.exec_(definition, namespace)
     return namespace['Cache']()
 
 def create_cache_func(func, **kwargs):
@@ -272,7 +272,7 @@ def create_cache_func(func, **kwargs):
         'gen_cache'   : lambda: create_cache_obj(**kwargs),
     }
 
-    exec definition in namespace
+    six.exec_(definition, namespace)
     return namespace['memo_func']
 
 memoize_default_options = {
@@ -384,7 +384,7 @@ class BenchResults(object):
 
     @classmethod
     def format_csv(cls, skip_no_calls = False):
-        fp = StringIO.StringIO()
+        fp = six.StringIO.StringIO()
 
         fp.write(", ".join([
             'Function',

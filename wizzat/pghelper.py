@@ -9,7 +9,8 @@ try:
 except ImportError:
     pass
 
-import copy, tempfile, types, cStringIO
+import six
+import copy, tempfile, types
 import psycopg2, psycopg2.extras, psycopg2.pool
 from types import *
 from wizzat.sqlhelper import *
@@ -59,7 +60,7 @@ def copy_from_rows(conn, table_name, columns, rows):
 
     This method requires postgresql
     """
-    fp = cStringIO.StringIO()
+    fp = six.StringIO.StringIO()
     for row in rows:
         fp.write('\t'.join(row))
         fp.write('\n')
@@ -174,9 +175,9 @@ def sql_where_from_params(**kwargs):
                 break
 
         clauses.append({
-            NoneType : "{0} is null".format(key),
-            list     : "{0} in (%({0})s)".format(key),
-            tuple    : "{0} in %({0})s".format(key),
+            type(None) : "{0} is null".format(key),
+            list       : "{0} in (%({0})s)".format(key),
+            tuple      : "{0} in %({0})s".format(key),
         }.get(type(value), "{0} = %({0})s".format(key)))
 
     return ' and '.join(clauses)

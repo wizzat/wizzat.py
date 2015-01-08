@@ -3,7 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import datetime, time, os, uuid
+import datetime
+import os
+import six
+import tempfile
+import time
+import uuid
 from wizzat.testutil import *
 from wizzat.util import *
 
@@ -11,8 +16,8 @@ class TestUtil(TestCase):
     def test_import_class(self):
         ospath = import_class('os.path')
         self.assertEqual(ospath.join('a', 'b', 'c'), 'a/b/c')
+        self.assertEqual(import_class(123), 123)
 
-    def test_import_class__import_error(self):
         with self.assertRaises(ImportError):
             ospath = import_class('something.that.doesnt.exist')
 
@@ -74,6 +79,25 @@ class TestUtil(TestCase):
 
         path = first_existing_path(doesnt_exist1, doesnt_exist2, __file__, 'testdateutil.py')
         self.assertEqual(path, __file__)
+        self.assertEqual(first_existing_path(doesnt_exist1, doesnt_exist2), None)
+
+    def test_load_paths(self):
+        path = load_paths(str, __file__, 'testdateutil.py')
+        self.assertIsInstance(path, six.string_types)
+
+        with self.assertRaises(ValueError):
+            load_paths(str, str(uuid.uuid4()))
+
+    def test_json_path(self):
+        obj = {
+            'abc': [ 'a', 'b', 'c' ],
+            'def' : 123,
+        }
+
+        self.assertEqual(json_path(None, 'abc'), None)
+        self.assertEqual(json_path(obj, 'abc', 0), 'a')
+        self.assertEqual(json_path(obj, 'def'), 123)
+        self.assertEqual(json_path(obj, 'ghi'), None)
 
     def test_merge_dicts(self):
         merged = merge_dicts(
@@ -129,6 +153,14 @@ class TestUtil(TestCase):
             'c' : 3,
         })
 
+    def test_slurp(self):
+        with tmpdir() as d:
+            path = os.path.join(d, 'filename')
+            with open(path, 'w') as fp:
+                fp.write('hi')
+
+            self.assertEqual(slurp(path), 'hi')
+
     def test_chunks(self):
         iterable = range(100)
 
@@ -178,7 +210,7 @@ class TestUtil(TestCase):
 
     def test_unique(self):
         self.assertEqual(unique([ 'a', 'b', 'b', 'c', 'd', 'a' ]), [ 'a', 'b', 'c', 'd' ])
-        self.assertEqual(unique(list(reversed(range(5))) + range(6)), [ 4, 3, 2, 1, 0, 5 ])
+        self.assertEqual(unique(list(reversed(range(5))) + list(range(6))), [ 4, 3, 2, 1, 0, 5 ])
 
         with self.assertRaises(TypeError):
             self.assertEqual(unique([ {'a' : 1}, {'a' : 2} ]), [ 'a', 'b', 'c', 'd' ])
@@ -209,3 +241,68 @@ class TestUtil(TestCase):
         self.assertTrue(new_obj['key2']['inner_key1']['inner_inner_key1'] is obj['key2']['inner_key1']['inner_inner_key1'])
         self.assertTrue(new_obj['key2']['inner_key1']['inner_inner_key2'] is obj['key2']['inner_key1']['inner_inner_key2'])
         self.assertTrue(new_obj['key3'][0]['inner_key1'] is obj['key3'][0]['inner_key1'])
+
+        self.assertEqual(json_copy('abc'), 'abc')
+
+    def test_with_umask(self):
+        with umask(101):
+            pass
+
+    def test_with_chdir(self):
+        with chdir('~/'):
+            pass
+
+    def test_touch(self):
+        with tmpdir() as d:
+            touch(os.path.join(d, 'abc'))
+            self.assertTrue(os.path.exists(os.path.join(d, 'abc')))
+
+    def test_listdirs(self):
+        with tmpdir() as d:
+            mkdirp(os.path.join(d, 'abc'))
+            mkdirp(os.path.join(d, 'def'))
+            mkdirp(os.path.join(d, 'ghi'))
+
+            self.assertEqual(set(os.path.basename(x) for x in listdirs([d], '...')), {
+                'abc', 'def', 'ghi'
+            })
+
+            self.assertEqual(set(os.path.basename(x) for x in listdirs([d], '....')), set())
+
+    def test_mkdirp(self):
+        with tmpdir() as d:
+            mkdirp(os.path.join(d, 'abc'))
+            mkdirp(os.path.join(d, 'abc'))
+
+            with self.assertRaises(OSError):
+                mkdirp('/usr/bin/foobar')
+
+    def test_funcs(self):
+        class F(object):
+            a = 123
+            def f(self):
+                pass
+
+            def g(self):
+                pass
+
+        self.assertEqual({ x.__name__ for x in funcs(F) }, {
+            'f', 'g',
+        })
+
+    def test_parse_host(self):
+        self.assertEqual(
+            parse_host('abc:123', 234),
+            Host('abc', '123'),
+        )
+
+        self.assertEqual(
+            parse_host('abc', 234),
+            Host('abc', '234'),
+        )
+
+    def test_parse_hosts(self):
+        self.assertEqual(
+            parse_hosts('abc:123, def:456', '1'),
+            [ Host('abc', '123'), Host('def', '456') ],
+        )

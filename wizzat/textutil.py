@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import cStringIO
+import six
 from wizzat.util import set_strict_defaults
 import wizzat.decorators
 
@@ -79,7 +79,7 @@ def text_table(header, rows, **options):
     header_sep = _format_hline(field_sizes, '=', '+')
     row_sep = _format_hline(field_sizes, '-', '+')
 
-    fp = cStringIO.StringIO()
+    fp = six.moves.cStringIO()
     fp.write(row_sep)
     fp.write(_format_row(field_sizes, header))
     fp.write(header_sep)

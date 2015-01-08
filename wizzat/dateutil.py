@@ -8,7 +8,6 @@ import contextlib
 import datetime
 import numbers
 import pytz
-import types
 
 __all__ = [
     'clear_date_formats',
@@ -200,7 +199,7 @@ def coerce_day(dt):
         return dt.date()
     elif isinstance(dt, datetime.date):
         return dt
-    elif isinstance(dt, types.NoneType):
+    elif isinstance(dt, type(None)):
         return dt
     elif isinstance(dt, numbers.Number) and _millis:
         return from_epoch_millis(dt).date()
@@ -220,7 +219,7 @@ def coerce_date(dt):
         return dt
     elif isinstance(dt, datetime.date):
         return datetime.datetime(dt.year, dt.month, dt.day)
-    elif isinstance(dt, types.NoneType):
+    elif isinstance(dt, type(None)):
         return dt
     elif isinstance(dt, numbers.Number) and _millis:
         return from_epoch_millis(dt)
