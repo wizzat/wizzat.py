@@ -29,6 +29,7 @@ __all__ = [
     'parse_hosts',
     'reset_online',
     'set_defaults',
+    'set_strict_defaults',
     'set_online',
     'slurp',
     'swallow',
@@ -316,12 +317,31 @@ def set_defaults(kwargs, defaults = {}, **default_values):
     )
     """
     if defaults:
-        defaults = dict(defaults)
-        defaults.update(kwargs)
-        return defaults
-    else:
-        default_values.update(kwargs)
-        return default_values
+        default_values = dict(defaults)
+
+    default_values.update(kwargs)
+    return default_values
+
+def set_strict_defaults(kwargs, defaults = {}, **default_values):
+    """
+    Returns kwargs with defaults set. Throws a TypeError if parameters exist
+    in kwargs that do not have default values.
+    Has two forms:
+    kwargs = set_defaults(kwargs, { 'value1' : 'value1', 'value2' : 'value2' })
+    kwargs = set_defaults(kwargs,
+        value1 = 'value1',
+        value2 = 'value2',
+    )
+    """
+    if defaults:
+        default_values = dict(defaults)
+
+    for k, v in kwargs.iteritems():
+        if k not in default_values:
+            raise TypeError("Unexpected paramter: " + k)
+        default_values[k] = v
+
+    return default_values
 
 def slurp(filename):
     """

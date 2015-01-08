@@ -87,6 +87,13 @@ class TestUtil(TestCase):
             'b' : 'd',
         })
 
+    def test_set_strict_defaults__kwargs(self):
+        self.assertEqual({ 'a' : 1 }, set_strict_defaults({}, a = 1))
+        self.assertEqual({ 'a' : 2 }, set_strict_defaults({ 'a' : 2 }, a = 1))
+
+        with self.assertRaises(TypeError):
+            set_strict_defaults({'d' : 4}, { 'a' : 1 })
+
     def test_set_defaults__kwargs(self):
         def func(**kwargs):
             return set_defaults(kwargs,
