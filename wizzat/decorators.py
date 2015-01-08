@@ -11,6 +11,7 @@ import os
 import sys
 import threading
 import time
+import wizzat.textutil
 from wizzat.util import (
     swallow,
     OfflineError,
@@ -74,24 +75,24 @@ class MemoizeResults(object):
             - Hits
             - Misses
         """
-        import texttable
-        table = texttable.Texttable(0)
-        table.header([
-            'Function Name',
-            'Calls',
-            'Hits',
-            'Misses',
-        ])
 
+        rows = []
         for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1]['call']):
-            table.add_row([
+            rows.append([
                 func.__name__,                                                      # 'Function Name',
                 stats['call'],                                                      # 'Calls',
                 stats['call'] - stats['miss'],                                      # 'Hits',
                 stats['miss'],                                                      # 'Misses',
             ])
 
-        return "Memoize Stats By Function\n\n" + table.draw()
+        table = wizzat.textutil.text_table([
+            'Function Name',
+            'Calls',
+            'Hits',
+            'Misses',
+        ], rows)
+
+        return "Memoize Stats By Function\n\n" + table
 
     @classmethod
     def format_csv(cls):
@@ -365,22 +366,21 @@ class BenchResults(object):
 
     @classmethod
     def format_stats(cls, skip_no_calls = False):
-        import texttable
-        table = texttable.Texttable(0)
-        table.header([
-            'Function',
-            'Sum Duration',
-            'Calls',
-        ])
-
+        rows = []
         for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
             if skip_no_calls and calls == 0:
                 continue
 
             func, cume_duration, calls = v
-            table.add_row([ k.__name__, cume_duration, calls ])
+            rows.append([ k.__name__, cume_duration, calls ])
 
-        return "Benchmark Results\n\n" + table.draw()
+        table = wizzat.textutil.text_table([
+            'Function',
+            'Sum Duration',
+            'Calls',
+        ], rows)
+
+        return "Benchmark Results\n\n" + table
 
     @classmethod
     def format_csv(cls, skip_no_calls = False):

@@ -3,12 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import unittest, difflib, texttable, functools, os, json
+import unittest, difflib, functools, os, json
 from wizzat.sqlhelper import fetch_results
-from wizzat.formattedtable import tableize_grid, tableize_obj_list
 from wizzat.util import assert_online, OfflineError, reset_online, set_online, is_online
 from wizzat.dateutil import reset_now
 from wizzat.decorators import *
+from wizzat.textutil import text_table
 
 __all__ = [
     'TestCase',
@@ -103,8 +103,8 @@ class TestCase(unittest.TestCase):
         header, rows = rows[0], rows[1:]
         results = fetch_results(conn, sql)
 
-        expected = tableize_grid(header, rows)
-        actual   = tableize_obj_list(header, results)
+        expected = text_table(header, rows)
+        actual   = text_table(header, results, row_dicts = True)
 
         diff = list(difflib.unified_diff(expected.split('\n'), actual.split('\n'), n=20))
         if diff:
