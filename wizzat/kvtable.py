@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import six
 import wizzat.decorators
 from wizzat.util import set_defaults
 
@@ -84,6 +85,7 @@ class KVTableMeta(type):
             ))
 
 
+@six.add_metaclass(KVTableMeta)
 class KVTable(object):
     """
     Abstract micro-ORM for working with KV stores.
@@ -102,7 +104,6 @@ class KVTable(object):
     default_{field}:    func, define functions for default behaviors.  These functions are executed
                         in order of definition in the fields array.
     """
-    __metaclass__ = KVTableMeta
     table_name    = ''
     key_fields    = []
     fields        = []

@@ -3,7 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy, types
+import copy
+import six
+import types
 import wizzat.decorators
 from wizzat.pghelper import *
 from wizzat.util import set_defaults
@@ -22,14 +24,14 @@ class DBTableImmutableFieldError(DBTableError): pass
 class DBTableMeta(type):
     def __init__(cls, name, bases, dct):
         super(DBTableMeta, cls).__init__(name, bases, dct)
-        if 'table_name' not in dct or not isinstance(dct['table_name'], basestring):
+        if 'table_name' not in dct or not isinstance(dct['table_name'], six.string_types):
             raise DBTableConfigError("table_name is required, and should be a string")
 
         if 'fields' not in dct or not isinstance(dct['fields'], (list, tuple)):
             raise DBTableConfigError("fields is required, and should be a list or tuple")
 
         if 'id_field' in dct:
-            if not isinstance(dct['id_field'], (basestring, types.NoneType)):
+            if not isinstance(dct['id_field'], (type(None), six.string_types)):
                 raise DBTableConfigError('id_field is not required, but should be a string or None')
         else:
             cls.id_field = None
@@ -38,7 +40,7 @@ class DBTableMeta(type):
             if not isinstance(dct['key_fields'], (list, tuple)):
                 raise DBTableConfigError('key_fields is not required, but should be a list of strings or None')
             for field in dct['key_fields']:
-                if not isinstance(field, basestring):
+                if not isinstance(field, six.string_types):
                     raise DBTableConfigError('key_fields is not required, but should be a list of strings or None')
         else:
             cls.key_fields = []
@@ -70,6 +72,7 @@ class DBTableMeta(type):
                 cls.default_funcs[field] = dct[func_name]
 
 
+@six.add_metaclass(DBTableMeta)
 class DBTable(object):
     """
     This is a micro-ORM for the purposes of not having dependencies on Django or SQLAlchemy.
@@ -91,7 +94,6 @@ class DBTable(object):
                         in order of definition in the fields array.
 
     """
-    __metaclass__ = DBTableMeta
     memoize       = False
     table_name    = ''
     id_field      = ''
@@ -288,7 +290,7 @@ class DBTable(object):
         """
         Inserts a row into the database, and returns that row.
         """
-        kv = { x:y for x,y in self.to_dict().iteritems() if y != None }
+        kv = { x:y for x,y in self.to_dict().items() if y != None }
         fields = kv.keys()
         values = [ kv[x] for x in fields ]
         sql = "INSERT INTO {table_name} ({fields}) VALUES ({values}) RETURNING *".format(
@@ -300,7 +302,7 @@ class DBTable(object):
         self.db_fields = fetch_results(self.conn, sql, **kv)[0]
         assert self.db_fields
 
-        for k, v in self.db_fields.iteritems():
+        for k, v in self.db_fields.items():
             setattr(self, k, copy.deepcopy(v))
 
     def _update(self, force = False):
@@ -331,7 +333,7 @@ class DBTable(object):
                         getattr(self, key_field),
                     ))
 
-        field_equality = ', '.join([ "{0} = %({0})s".format(x) for x in bind_params.iterkeys() ])
+        field_equality = ', '.join([ "{0} = %({0})s".format(x) for x in bind_params.keys() ])
 
         if self.id_field:
             fields = [ self.id_field ]
@@ -341,7 +343,7 @@ class DBTable(object):
             fields = self.db_fields.keys()
 
         filter_clause = ' and '.join([ '{0} = %(orig_{0})s'.format(field) for field in fields ])
-        bind_params.update({ "orig_{}".format(x) : y for x, y in self.db_fields.iteritems() })
+        bind_params.update({ "orig_{}".format(x) : y for x, y in self.db_fields.items() })
 
         sql = """
             UPDATE {table_name}
@@ -356,7 +358,7 @@ class DBTable(object):
 
         self.db_fields = fetch_results(self.conn, sql, **bind_params)[0]
         assert self.db_fields
-        for k, v in self.db_fields.iteritems():
+        for k, v in self.db_fields.items():
             setattr(self, k, copy.deepcopy(v))
 
     def delete(self):

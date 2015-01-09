@@ -49,10 +49,10 @@ class DBTableTest(DBTestCase):
         execute(self.conn(), "INSERT INTO foo (a, b) VALUES (1, 3)")
         execute(self.conn(), "INSERT INTO foo (a, b) VALUES (2, 3)")
 
-        self.assertEqual(sorted([ x.to_dict() for x in FooTable.find_by(a = 1) ]), sorted([
+        self.assertEqual(sorted([ x.to_dict() for x in FooTable.find_by(a = 1) ], key=lambda x: x['b']), sorted([
             { 'a' : 1, 'b' : 2 },
             { 'a' : 1, 'b' : 3 },
-        ]))
+        ], key=lambda x: x['b']))
 
     def test_insert(self):
         f1 = FooTable(a = 1, b = 2).update()

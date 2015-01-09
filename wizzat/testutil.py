@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import six
 import unittest, difflib, functools, os, json
 from wizzat.sqlhelper import fetch_results
 from wizzat.util import assert_online, OfflineError, reset_online, set_online, is_online
@@ -50,7 +51,7 @@ class TestCase(unittest.TestCase):
 
     def setup_connections(self):
         if self.setup_database:
-            for db_name, query in self.setup_queries.iteritems():
+            for db_name, query in self.setup_queries.items():
                 assert isinstance(v, (list, tuple)), "setup_queries is of the form { 'db_name' : [ 'query1', 'query2' ] }"
                 db_conn = self.conn(db_name)
                 for query in queries:
@@ -66,7 +67,7 @@ class TestCase(unittest.TestCase):
             except ImportError:
                 pass
 
-            for db_name, query in self.teardown_queries.iteritems():
+            for db_name, query in self.teardown_queries.items():
                 assert isinstance(v, (list, tuple)), "teardown_queries is of the form { 'db_name' : [ 'query1', 'query2' ] }"
                 db_conn = self.conn(db_name)
                 for query in queries:
