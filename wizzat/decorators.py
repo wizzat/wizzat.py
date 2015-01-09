@@ -77,7 +77,7 @@ class MemoizeResults(object):
         """
 
         rows = []
-        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1]['call']):
+        for func, stats in sorted(six.iteritems(cls.stats), key=lambda x: x[1]['call']):
             rows.append([
                 func.__name__,                                                      # 'Function Name',
                 stats['call'],                                                      # 'Calls',
@@ -113,7 +113,7 @@ class MemoizeResults(object):
         ]))
         fp.write("\n")
 
-        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1]['call']):
+        for func, stats in sorted(six.iteritems(cls.stats), key=lambda x: x[1]['call']):
             fp.write(",".join([ str(x) for x in [
                 func.__name__,                                                      # 'Function Name',
                 stats['call'],                                                      # 'Calls',
@@ -138,7 +138,7 @@ def construct_cache_func_definition(threads, disable_kw, obj, verbose, **kwargs)
     if disable_kw:
         setup_key = "(func, args)"
     else:
-        setup_key = "(func, args, tuple(sorted(izip(kwargs.iteritems()))))"
+        setup_key = "(func, args, tuple(sorted(izip(iteritems(kwargs)))))"
 
     if obj:
         generate_cache = 'if not hasattr(args[0], "__memoize_cache__"): setattr(args[0], "__memoize_cache__", gen_cache())'
@@ -180,8 +180,12 @@ def construct_cache_obj_definition(max_size, max_bytes, until, ignore_nulls, ver
 
     if max_bytes:
         byte_filter = "while self and self.current_size > self.max_bytes: self.popitem(False)"
+        bytes_incr  = "self.current_size += sys.getsizeof(value)"
+        bytes_decr  = "self.current_size -= sys.getsizeof(value)"
     else:
         byte_filter = ""
+        bytes_incr = ""
+        bytes_decr = ""
 
     if max_size:
         size_filter = "while self and len(self) > self.max_size: self.popitem(False)"
@@ -211,7 +215,7 @@ class Cache({superclass}):
 
     def __delitem__(self, key):
         value = {superclass}.__getitem__(self, key)
-        self.current_size -= sys.getsizeof(value)
+        {bytes_decr}
         {superclass}.__delitem__(self, key)
 
     def __getitem__(self, key):
@@ -222,9 +226,15 @@ class Cache({superclass}):
     def __setitem__(self, key, value):
         {remove_old_key}
         {until_call}
-        {null_filter}{superclass}.__setitem__(self, key, {result_expr}); self.current_size += sys.getsizeof(value)
+        {null_filter}{superclass}.__setitem__(self, key, {result_expr}); {bytes_incr}
         {byte_filter}
         {size_filter}
+
+    if sys.version_info.major >= 3:
+        def popitem(self, last=True):
+            key, value = {superclass}.popitem(self, last)
+            {bytes_decr}
+            return key, value
 """.format(**locals())
 
     if verbose:
@@ -267,7 +277,8 @@ def create_cache_func(func, **kwargs):
         'func'        : func,
         'stats'       : stats_obj,
         'cache'       : cache_obj,
-        'izip'        : itertools.izip,
+        'izip'        : six.moves.zip,
+        'iteritems'   : six.iteritems,
         'lock'        : threading.RLock(),
         'gen_cache'   : lambda: create_cache_obj(**kwargs),
     }
@@ -290,7 +301,7 @@ memoize_default_options = {
 def expand_memoize_args(kwargs):
     global memoize_default_options
     kwargs = set_defaults(kwargs, memoize_default_options)
-    if any(x not in memoize_default_options for x in kwargs.iterkeys()):
+    if any(x not in memoize_default_options for x in six.iterkeys(kwargs)):
         raise TypeError("Received unexpected arguments to @memoize")
 
     return kwargs
@@ -356,7 +367,7 @@ class BenchResults(object):
         def foo():
             print 'called foo!'
 
-        for x in xrange(100):
+        for x in range(100):
             foo()
 
         print BenchResults().format_stats() # Text table pretty
@@ -367,7 +378,7 @@ class BenchResults(object):
     @classmethod
     def format_stats(cls, skip_no_calls = False):
         rows = []
-        for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+        for k, v in sorted(six.iteritems(cls.results), key=lambda x: x[1][1]):
             if skip_no_calls and calls == 0:
                 continue
 
@@ -393,7 +404,7 @@ class BenchResults(object):
         ]))
         fp.write("\n")
 
-        for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+        for k, v in sorted(six.iteritems(cls.results), key=lambda x: x[1][1]):
             if skip_no_calls and calls == 0:
                 continue
 
@@ -403,7 +414,7 @@ class BenchResults(object):
 
     @classmethod
     def clear(cls):
-        for func, stats in cls.results.iteritems():
+        for func, stats in six.iteritems(cls.results):
             stats[1] = 0
             stats[2] = 0
 

@@ -39,11 +39,13 @@ def set_formatter(obj_type, func):
 
 def format_value(obj, trunc_len = None):
     global format_rules
-    for rule_type, rule_func in sorted(format_rules.iteritems()):
+    for rule_type, rule_func in sorted(six.iteritems(format_rules)):
         if isinstance(obj, rule_type):
-            return rule_func(obj)
+            formatted_value = rule_func(obj)
+            break
+    else:
+        formatted_value = six.text_type(obj)
 
-    formatted_value = unicode(obj)
     if trunc_len and len(formatted_value) > trunc_len:
         return formatted_value[:trunc_len]
     else:

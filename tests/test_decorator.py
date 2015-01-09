@@ -3,12 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from wizzat.decorators import *
-from wizzat.testutil   import *
-import wizzat.decorators
+import six
 import sys
 import threading
 import time
+
+import wizzat.decorators
+from wizzat.decorators import *
+from wizzat.testutil   import *
 
 class MemoizeTest(TestCase):
     options = {
@@ -83,32 +85,32 @@ class MemoizeTest(TestCase):
         payload_size = sys.getsizeof("abc")
 
         # We can concurrently store two calls, but not 3
-        @memoize(max_bytes = payload_size * 3-1)
+        @memoize(max_bytes = payload_size * 3-1, verbose=True)
         def func(*args, **kwargs):
             return "".join([ 'a', 'b', 'c' ])
 
         func(1) # LRU=1
-        self.assertEqual(func.cache.current_size, payload_size*1)
+        self.assertEqual(func.cache.current_size / payload_size, 1)
         self.assertEqual(func.stats['miss'], 1)
 
         func(1) # LRU=1
-        self.assertEqual(func.cache.current_size, payload_size*1)
+        self.assertEqual(func.cache.current_size / payload_size, 1)
         self.assertEqual(func.stats['miss'], 1)
 
         func(2) # LRU=2,1
-        self.assertEqual(func.cache.current_size, payload_size*2)
+        self.assertEqual(func.cache.current_size / payload_size, 2)
         self.assertEqual(func.stats['miss'], 2)
 
         func(2) # LRU=2,1
-        self.assertEqual(func.cache.current_size, payload_size*2)
+        self.assertEqual(func.cache.current_size / payload_size, 2)
         self.assertEqual(func.stats['miss'], 2)
 
         func(3) # LRU=3,2
-        self.assertEqual(func.cache.current_size, payload_size*2)
+        self.assertEqual(func.cache.current_size / payload_size, 2)
         self.assertEqual(func.stats['miss'], 3)
 
         func(1) # LRU=3,1
-        self.assertEqual(func.cache.current_size, payload_size*2)
+        self.assertEqual(func.cache.current_size / payload_size, 2)
         self.assertEqual(func.stats['miss'], 4)
 
     def test_option__max_size(self):
@@ -182,7 +184,7 @@ class MemoizeTest(TestCase):
             def f(*args, **kwargs):
                 time.sleep(.25)
 
-        threads = [ T() for _ in xrange(3) ]
+        threads = [ T() for _ in range(3) ]
         for thread in threads:
             thread.start()
 
@@ -205,7 +207,7 @@ class MemoizeTest(TestCase):
         pass
 
     def test_all_options_have_tests(self):
-        for k, v in wizzat.decorators.memoize_default_options.iteritems():
+        for k, v in six.iteritems(wizzat.decorators.memoize_default_options):
             self.assertTrue(
                 hasattr(self, 'test_option__{}'.format(k)),
                 "Test for {} does not exist".format(k)
@@ -219,7 +221,7 @@ class MemoizeTest(TestCase):
         if len(kw) == len(self.options):
             yield kw
         else:
-            for k, v in sorted(self.options.iteritems()):
+            for k, v in sorted(six.iteritems(self.options)):
                 if k in kw:
                     continue
 
