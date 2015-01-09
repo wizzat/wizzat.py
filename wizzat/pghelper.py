@@ -168,7 +168,7 @@ def sql_where_from_params(**kwargs):
     Lists and tuples become in clauses
     """
     clauses = [ 'true' ]
-    for key, value in sorted(kwargs.iteritems()):
+    for key, value in sorted(six.iteritems(kwargs)):
         if isinstance(value, list) or isinstance(value, tuple):
             if not value:
                 clauses = [ 'true = false' ]
@@ -263,11 +263,11 @@ class ConnMgr(object):
         self.pool.putconn(conn)
 
     def commit(self):
-        for key, conn in self.connections.iteritems():
+        for key, conn in six.iteritems(self.connections):
             conn.commit()
 
     def rollback(self):
-        for key, conn in self.connections.iteritems():
+        for key, conn in six.iteritems(self.connections):
             conn.rollback()
 
     def putall(self):

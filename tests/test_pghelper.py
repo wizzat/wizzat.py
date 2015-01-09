@@ -41,10 +41,10 @@ class PgHelperTest(TestCase):
                 SELECT 4 AS foobar
             """)
 
-            self.assertEqual(result.next()["foobar"], 1)
-            self.assertEqual(result.next()["foobar"], 2)
-            self.assertEqual(result.next()["foobar"], 3)
-            self.assertEqual(result.next()["foobar"], 4)
+            self.assertEqual(next(result)["foobar"], 1)
+            self.assertEqual(next(result)["foobar"], 2)
+            self.assertEqual(next(result)["foobar"], 3)
+            self.assertEqual(next(result)["foobar"], 4)
 
     def test_fetch_results(self):
         with psycopg2.connect(**self.db_info) as conn:
