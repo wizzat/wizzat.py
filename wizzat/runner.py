@@ -35,7 +35,7 @@ class RunnerBase(object):
         self.setup_logging()
         self.setup_connections()
 
-        for sig, func in self.sig_handlers.iteritems():
+        for sig, func in self.sig_handlers.items():
             signal.signal(sig, getattr(self, func))
 
     def run(self):

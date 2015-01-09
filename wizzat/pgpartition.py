@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
+import six
 from wizzat.dateutil import *
 from wizzat.pghelper import execute, table_exists
 
@@ -125,7 +126,7 @@ def generate_partition_sql(table_name, partition_name, range_values = None, key_
                 range_values['stop'],
             )
 
-    for field_name, value in key_values.iteritems():
+    for field_name, value in key_values.items():
         check_constraints += _generate_kv_check(field_name, value)
 
     return """
@@ -144,7 +145,7 @@ def _part_format_value(value):
         return "'{}'::timestamp".format(format_date(value))
     elif isinstance(value, datetime.date):
         return "'{}'::date".format(format_day(value))
-    elif isinstance(value, basestring):
+    elif isinstance(value, six.string_types):
         return "'{}'".format(value)
     else:
         return value

@@ -22,7 +22,7 @@ class KVTableImmutableFieldError(KVTableError): pass
 class KVTableMeta(type):
     def __init__(cls, name, bases, dct):
         super(KVTableMeta, cls).__init__(name, bases, dct)
-        if 'table_name' not in dct or not isinstance(dct['table_name'], basestring):
+        if 'table_name' not in dct or not isinstance(dct['table_name'], six.string_types):
             raise KVTableConfigError("table_name is required, and should be a string")
 
         if 'fields' not in dct or not isinstance(dct['fields'], (list, tuple)):
@@ -38,7 +38,7 @@ class KVTableMeta(type):
 
                 return '{table_name}/{key}'.format(
                     table_name = cls.table_name,
-                    key = '/'.join(unicode(x) for x in args[:len(dct['key_fields'])])
+                    key = '/'.join(six.text_type(x) for x in args[:len(dct['key_fields'])])
                 )
 
             cls.key_func = classmethod(key_func)
