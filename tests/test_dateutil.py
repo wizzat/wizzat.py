@@ -51,7 +51,6 @@ class TestDateUtil(TestCase):
     def test_coerce_date_types(self):
         types = [
             0,
-            0l,
             0.0,
             datetime.datetime.utcnow(),
             datetime.date.today(),
@@ -64,7 +63,6 @@ class TestDateUtil(TestCase):
     def test_coerce_day_types(self):
         types = [
             0,
-            0l,
             0.0,
             datetime.datetime.utcnow(),
             datetime.date.today(),
