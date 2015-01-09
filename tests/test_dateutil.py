@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 from wizzat.testutil import *
 from wizzat.dateutil import *
 import datetime, time
@@ -46,7 +51,6 @@ class TestDateUtil(TestCase):
     def test_coerce_date_types(self):
         types = [
             0,
-            0l,
             0.0,
             datetime.datetime.utcnow(),
             datetime.date.today(),
@@ -59,7 +63,6 @@ class TestDateUtil(TestCase):
     def test_coerce_day_types(self):
         types = [
             0,
-            0l,
             0.0,
             datetime.datetime.utcnow(),
             datetime.date.today(),

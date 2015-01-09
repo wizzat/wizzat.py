@@ -1,5 +1,10 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import Queue, gzip, time, threading, os, fcntl, shutil, json
-from util import mkdirp
+from wizzat.util import mkdirp
 
 __all__ = [
     'QueueFile',
@@ -23,9 +28,9 @@ class QueueFile(object):
         class SpammerThread(threading.Thread):
             def run(self):
                 r = range(10)
-                chunk = "".join([ random.choice(r)) for _ in xrange(2048) ])
+                chunk = "".join([ random.choice(r)) for _ in range(2048) ])
                 f = QueueFile("asdf")
-                for _ in xrange(10000):
+                for _ in range(10000):
                     f.write(chunk)
 
             @classmethod
@@ -34,7 +39,7 @@ class QueueFile(object):
                 thread.start()
                 return thread
 
-        threads = [ SpammerThread.launch() for x in xrange(20) ]
+        threads = [ SpammerThread.launch() for x in range(20) ]
         for t in threads:
             t.join()
         sort asdf | uniq -c

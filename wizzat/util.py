@@ -1,5 +1,20 @@
-import sys, inspect, errno, os, contextlib, tempfile, shutil, collections, types, ConfigParser, re
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import collections
+import contextlib
+import errno
+import inspect
 import json
+import os
+import re
+import shutil
+import six
+import sys
+import tempfile
+import types
 
 __all__ = [
     'Host',
@@ -11,13 +26,13 @@ __all__ = [
     'filter_keys',
     'first_existing_path',
     'funcs',
-    'grep',
     'import_class',
     'invert_dict',
     'is_online',
     'json_copy',
     'json_path',
-    'load_json_paths',
+    'listdirs',
+    'load_paths',
     'merge_dicts',
     'mkdirp',
     'parse_host',
@@ -25,9 +40,11 @@ __all__ = [
     'reset_online',
     'set_defaults',
     'set_online',
+    'set_strict_defaults',
     'slurp',
     'swallow',
     'tmpdir',
+    'touch',
     'umask',
     'unique',
     'update_env',
@@ -93,8 +110,8 @@ def chdir(new_path):
         Modified from from https://github.com/bennoleslie/pyutil
     """
 
-    cwd = os.cwd()
-    os.chdir(new_path)
+    cwd = os.getcwd()
+    os.chdir(os.path.expanduser(new_path))
     yield
     os.chdir(cwd)
 
@@ -115,11 +132,11 @@ def invert_dict(d, many = False):
         { 2 : [ 1, 2, 3 ] }
     """
     if not many:
-        return { v : k for k, v in d.iteritems() }
+        return { v : k for k, v in six.iteritems(d) }
 
     output = collections.defaultdict(list)
 
-    for k, v in d.iteritems():
+    for k, v in six.iteritems(d):
         output[v].append(k)
 
     return dict(output)
@@ -136,7 +153,7 @@ def touch(path):
 
 def listdirs(paths, regex = None):
     for path in paths:
-        for filename in os.listdir(path):
+        for filename in os.listdir(os.path.expanduser(path)):
             if not regex or re.match(regex, filename):
                 yield os.path.join(path, filename)
 
@@ -148,7 +165,7 @@ def mkdirp(path):
         See http://stackoverflow.com/questions/10539823/python-os-makedirs-to-recreate-path
     """
     try:
-        os.makedirs(path)
+        os.makedirs(os.path.expanduser(path))
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -165,54 +182,24 @@ def first_existing_path(*paths):
                 return path
     return None
 
-def load_json_paths(*paths):
-    """
-        JSON parses the first existing path.  This is generally intended to be used as follows:
-
-        def get_config():
-            return load_json_paths(
-                os.environ['ENV_OVERRIDE'],
-                "~/default_location",
-            )
-    """
+def load_paths(func, *paths):
     path = first_existing_path(*paths)
     if not path:
         raise ValueError()
 
     with open(path, 'r') as fp:
-        return json.load(fp)
-
-def load_config_paths(*paths):
-    """
-        ConfigParser.read()s the first existing path.  This is generally intended to be used as follows:
-
-        from wizzat.decorators import memoize
-
-        @memoize()
-        def get_config():
-            return load_configparser_paths(
-                "~/prod_app_config",
-                "~/dev_app_config",
-                "~/test_app_config",
-            )
-
-    """
-    path = first_existing_path(*paths)
-    if not path:
-        raise ValueError()
-
-    with open(first_existing_path(*paths), 'r') as fp:
-        return ConfigParser.SafeConfigParser.readfp(fp)
+        return func(fp.read())
 
 def json_path(obj, *args):
     if not obj:
         return None
 
-    for arg in args:
-        if arg not in obj:
-            return None
-        obj = obj[arg]
-    return obj
+    try:
+        for arg in args:
+            obj = obj[arg]
+        return obj
+    except (KeyError, IndexError) as e:
+        return None
 
 def merge_dicts(*iterable):
     """
@@ -221,7 +208,7 @@ def merge_dicts(*iterable):
 
         See http://dietbuddha.blogspot.com/2013/04/python-expression-idiom-merging.html
     """
-    return reduce(lambda a, b: a.update(b) or a, iterable, {})
+    return six.moves.reduce(lambda a, b: a.update(b) or a, iterable, {})
 
 def swallow(err_type, func, *args, **kwargs):
     """
@@ -279,7 +266,7 @@ def import_class(name):
 
         See: http://stackoverflow.com/questions/547829/how-to-dynamically-load-a-python-class
     """
-    if type(name) != str:
+    if not isinstance(name, six.string_types):
         return name
 
     package    = ".".join(name.split(".")[: - 1])
@@ -297,7 +284,7 @@ def chunks(iterable, chunk_size):
             for element in chunk:
                 element.perform_operation()
     """
-    for chunk_no in xrange(0, len(iterable), chunk_size):
+    for chunk_no in six.moves.xrange(0, len(iterable), chunk_size):
         yield iterable[chunk_no:chunk_no+chunk_size]
 
 def set_defaults(kwargs, defaults = {}, **default_values):
@@ -311,12 +298,31 @@ def set_defaults(kwargs, defaults = {}, **default_values):
     )
     """
     if defaults:
-        defaults = dict(defaults)
-        defaults.update(kwargs)
-        return defaults
-    else:
-        default_values.update(kwargs)
-        return default_values
+        default_values = dict(defaults)
+
+    default_values.update(kwargs)
+    return default_values
+
+def set_strict_defaults(kwargs, defaults = {}, **default_values):
+    """
+    Returns kwargs with defaults set. Throws a TypeError if parameters exist
+    in kwargs that do not have default values.
+    Has two forms:
+    kwargs = set_defaults(kwargs, { 'value1' : 'value1', 'value2' : 'value2' })
+    kwargs = set_defaults(kwargs,
+        value1 = 'value1',
+        value2 = 'value2',
+    )
+    """
+    if defaults:
+        default_values = dict(defaults)
+
+    for k, v in six.iteritems(kwargs):
+        if k not in default_values:
+            raise TypeError("Unexpected paramter: " + k)
+        default_values[k] = v
+
+    return default_values
 
 def slurp(filename):
     """
@@ -329,11 +335,7 @@ def funcs(obj):
     """
         Returns the functions on object (or, callables)
     """
-    try:
-        return [ y for x,y in obj.__dict__.iteritems() if isinstance(y, (types.FunctionType, classmethod)) ]
-    except (TypeError, AttributeError) as e:
-        print e
-        return []
+    return filter(callable, six.itervalues(obj.__dict__))
 
 def filter_keys(keys, dictionary, error = True):
     """
@@ -347,20 +349,11 @@ def filter_keys(keys, dictionary, error = True):
 
 def json_copy(obj):
     if isinstance(obj, dict):
-        return { k : (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for k, v in obj.iteritems() }
+        return { k : (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for k, v in six.iteritems(obj) }
     elif isinstance(obj, (list, tuple)):
         return [ (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for v in obj ]
     else:
         return obj
-
-def grep(iterable):
-    """
-        Returns all non-none values in an iterable
-    """
-    if isinstance(iterable, (list, tuple)):
-        return [ x for x in iterable if x != None ]
-    else:
-        return ( x for x in iterable if x != None )
 
 def unique(iterable):
     """
@@ -369,16 +362,16 @@ def unique(iterable):
     d = collections.OrderedDict()
     for x in iterable:
         d[x] = 1
-    return d.keys()
+    return list(d.keys())
 
 Host = collections.namedtuple('Host', 'host port')
 Host.combined = lambda self: '{}:{}'.format(self.host, self.port)
 
-def parse_host(host_string, default_port):
+def parse_host(host_string, default_port = ''):
     try:
-        return Host(*host_string.split(':'))
-    except ValueError as e:
-        return Host(host_string, default_port)
+        return Host(*(x.strip() for x in host_string.split(':')))
+    except (TypeError, ValueError) as e:
+        return Host(host_string, six.text_type(default_port))
 
 def parse_hosts(host_list, default_port):
     return [ parse_host(x) for x in host_list.split(',') ]

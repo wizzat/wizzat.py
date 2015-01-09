@@ -1,3 +1,9 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import sys
 import wizzat.pghelper
 from wizzat.testutil import *
 from testcase import DBTestCase
@@ -45,6 +51,14 @@ class ConnMgrTest(DBTestCase):
         wizzat.pghelper.execute(mgr.a, "create table foobar (a integer)");
         self.assertEqual(wizzat.pghelper.table_exists(mgr.a, "foobar"), True)
         self.assertEqual(wizzat.pghelper.table_exists(mgr.b, "foobar"), False)
+
+    if sys.version_info.major < 3:
+        def test_str_and_unicode_are_same_connection(self):
+            mgr = wizzat.pghelper.ConnMgr(**self.db_info)
+            c1 = mgr.getconn(str("a"))
+            c2 = mgr.getconn(unicode("a"))
+
+            self.assertTrue(c1 is c2)
 
     def test_commit(self):
         mgr = wizzat.pghelper.ConnMgr(**self.db_info)

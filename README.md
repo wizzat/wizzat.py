@@ -9,7 +9,7 @@ Modules:
 - The _util_ module contains utility functions.
 - The _dateutil_ module contains date utils for working on top of python-dateutil and pytz.
 - The _pghelper_ module contains utilities for working with raw psycopg2 connections and a light weight named connection manager.
-- The _formattedtable_ module contains a wrapper on top of texttable for ensuring items are formatted before being printed
+- The _textutil_ module contains various utilities for transforming data to text, in particular a text table
 - The _serialization_ module contains methods for space and time efficient serialization of integer sets and lists.
 - The _testutil_ module contains test cases, asserts, and mixins for getting various test behaviors.
 - The _mathutil_ module contains various math utilites as well as logarithmic percentile approximation and running average.

@@ -1,5 +1,11 @@
-import decorators
-from util import set_defaults
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import six
+import wizzat.decorators
+from wizzat.util import set_defaults
 
 __all__ = [
     'KVTableError',
@@ -16,7 +22,7 @@ class KVTableImmutableFieldError(KVTableError): pass
 class KVTableMeta(type):
     def __init__(cls, name, bases, dct):
         super(KVTableMeta, cls).__init__(name, bases, dct)
-        if 'table_name' not in dct or not isinstance(dct['table_name'], basestring):
+        if 'table_name' not in dct or not isinstance(dct['table_name'], six.string_types):
             raise KVTableConfigError("table_name is required, and should be a string")
 
         if 'fields' not in dct or not isinstance(dct['fields'], (list, tuple)):
@@ -32,7 +38,7 @@ class KVTableMeta(type):
 
                 return '{table_name}/{key}'.format(
                     table_name = cls.table_name,
-                    key = '/'.join(unicode(x) for x in args[:len(dct['key_fields'])])
+                    key = '/'.join(six.text_type(x) for x in args[:len(dct['key_fields'])])
                 )
 
             cls.key_func = classmethod(key_func)
@@ -43,12 +49,12 @@ class KVTableMeta(type):
 
 
         if dct.get('memoize'):
-            cls.id_cache = decorators.create_cache_obj(
+            cls.id_cache = wizzat.decorators.create_cache_obj(
                 max_size  = dct.get('memoize_size', 0),
                 max_bytes = dct.get('memoize_bytes', 0),
             )
 
-            cls.key_cache = decorators.create_cache_obj(
+            cls.key_cache = wizzat.decorators.create_cache_obj(
                 max_size  = dct.get('memoize_size', 0),
                 max_bytes = dct.get('memoize_bytes', 0),
             )
@@ -79,6 +85,7 @@ class KVTableMeta(type):
             ))
 
 
+@six.add_metaclass(KVTableMeta)
 class KVTable(object):
     """
     Abstract micro-ORM for working with KV stores.
@@ -97,7 +104,6 @@ class KVTable(object):
     default_{field}:    func, define functions for default behaviors.  These functions are executed
                         in order of definition in the fields array.
     """
-    __metaclass__ = KVTableMeta
     table_name    = ''
     key_fields    = []
     fields        = []

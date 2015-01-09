@@ -1,4 +1,11 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import collections
 import math
+import six
 
 __all__ = [
     'avg',
@@ -39,17 +46,15 @@ class Percentile(object):
     p.percentile(1.0) # Max value
     """
     def __init__(self, *values):
-        self.values     = [ 0 ] * 2000
+        self.values     = collections.defaultdict(int)
         self.total      = 0
         self.num_values = 0
-        self.min_idx    = None
-        self.max_idx    = None
 
         for value in values:
             self.add_value(value)
 
     def add_value(self, value):
-        if value == None:
+        if value is None:
             return
 
         if value < 0:
@@ -60,26 +65,24 @@ class Percentile(object):
         self.total += value
         self.values[idx] += 1
         self.num_values += 1
-        self.min_idx = min(x for x in (idx, self.min_idx) if x != None)
-        self.max_idx = max(x for x in (idx, self.max_idx) if x != None)
 
     def percentile(self, pct):
         if pct > 1.0:
             raise ValueError("pct > 1.0")
 
-        if self.min_idx == None:
+        if not self.values:
             return None
 
         target = pct * self.num_values
         ct = 0
 
-        for idx in xrange(self.min_idx, self.max_idx+1):
-            ct += self.values[idx]
+        for idx, value in sorted(six.iteritems(self.values)):
+            ct += value 
             if ct >= target:
                 break
 
         def e(n):
-            return 10**(n/100.0)-.5
+            return 10**(n/100.0)-1
 
         return int(avg([e(idx), e(idx+.9)]))
 

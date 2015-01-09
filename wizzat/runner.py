@@ -1,5 +1,10 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import logging, signal, os, os.path
-from util import mkdirp, slurp
+from wizzat.util import mkdirp, slurp
 
 __all__ = [
     'RunnerBase',
@@ -30,7 +35,7 @@ class RunnerBase(object):
         self.setup_logging()
         self.setup_connections()
 
-        for sig, func in self.sig_handlers.iteritems():
+        for sig, func in self.sig_handlers.items():
             signal.signal(sig, getattr(self, func))
 
     def run(self):

@@ -1,14 +1,20 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 try:
     from psycopg2cffi import compat
     compat.register()
 except ImportError:
     pass
 
-import copy, tempfile, types, cStringIO
+import six
+import copy, tempfile, types
 import psycopg2, psycopg2.extras, psycopg2.pool
 from types import *
-from sqlhelper import *
-from util import set_defaults
+from wizzat.sqlhelper import *
+from wizzat.util import set_defaults
 
 __all__ = [
     #'vacuum',
@@ -54,7 +60,7 @@ def copy_from_rows(conn, table_name, columns, rows):
 
     This method requires postgresql
     """
-    fp = cStringIO.StringIO()
+    fp = six.StringIO.StringIO()
     for row in rows:
         fp.write('\t'.join(row))
         fp.write('\n')
@@ -162,16 +168,16 @@ def sql_where_from_params(**kwargs):
     Lists and tuples become in clauses
     """
     clauses = [ 'true' ]
-    for key, value in sorted(kwargs.iteritems()):
+    for key, value in sorted(six.iteritems(kwargs)):
         if isinstance(value, list) or isinstance(value, tuple):
             if not value:
                 clauses = [ 'true = false' ]
                 break
 
         clauses.append({
-            NoneType : "{0} is null".format(key),
-            list     : "{0} in (%({0})s)".format(key),
-            tuple    : "{0} in %({0})s".format(key),
+            type(None) : "{0} is null".format(key),
+            list       : "{0} in (%({0})s)".format(key),
+            tuple      : "{0} in %({0})s".format(key),
         }.get(type(value), "{0} = %({0})s".format(key)))
 
     return ' and '.join(clauses)
@@ -257,11 +263,11 @@ class ConnMgr(object):
         self.pool.putconn(conn)
 
     def commit(self):
-        for key, conn in self.connections.iteritems():
+        for key, conn in six.iteritems(self.connections):
             conn.commit()
 
     def rollback(self):
-        for key, conn in self.connections.iteritems():
+        for key, conn in six.iteritems(self.connections):
             conn.rollback()
 
     def putall(self):

@@ -1,6 +1,10 @@
-import collections
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import datetime
-import wizzat.pghelper
+import six
 from wizzat.dateutil import *
 from wizzat.pghelper import execute, table_exists
 
@@ -43,7 +47,7 @@ class DatePartitioner(object):
 
         partition_name = self.partition_name(date)
 
-        wizzat.pgpartition.create_partition(conn, self.full_table_name, partition_name, range_values = [{
+        create_partition(conn, self.full_table_name, partition_name, range_values = [{
             'field' : self.date_field,
             'start' : date,
             'stop'  : date + self.interval,
@@ -122,7 +126,7 @@ def generate_partition_sql(table_name, partition_name, range_values = None, key_
                 range_values['stop'],
             )
 
-    for field_name, value in key_values.iteritems():
+    for field_name, value in key_values.items():
         check_constraints += _generate_kv_check(field_name, value)
 
     return """
@@ -141,7 +145,7 @@ def _part_format_value(value):
         return "'{}'::timestamp".format(format_date(value))
     elif isinstance(value, datetime.date):
         return "'{}'::date".format(format_day(value))
-    elif isinstance(value, basestring):
+    elif isinstance(value, six.string_types):
         return "'{}'".format(value)
     else:
         return value

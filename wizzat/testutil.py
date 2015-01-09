@@ -1,9 +1,15 @@
-import unittest, difflib, texttable, functools, os, json
-from sqlhelper import fetch_results
-from formattedtable import tableize_grid, tableize_obj_list
-from util import assert_online, OfflineError, reset_online, set_online, is_online
-from dateutil import reset_now
-from decorators import *
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import six
+import unittest, difflib, functools, os, json
+from wizzat.sqlhelper import fetch_results
+from wizzat.util import assert_online, OfflineError, reset_online, set_online, is_online
+from wizzat.dateutil import reset_now
+from wizzat.decorators import *
+from wizzat.textutil import text_table
 
 __all__ = [
     'TestCase',
@@ -45,7 +51,7 @@ class TestCase(unittest.TestCase):
 
     def setup_connections(self):
         if self.setup_database:
-            for db_name, query in self.setup_queries.iteritems():
+            for db_name, query in self.setup_queries.items():
                 assert isinstance(v, (list, tuple)), "setup_queries is of the form { 'db_name' : [ 'query1', 'query2' ] }"
                 db_conn = self.conn(db_name)
                 for query in queries:
@@ -61,7 +67,7 @@ class TestCase(unittest.TestCase):
             except ImportError:
                 pass
 
-            for db_name, query in self.teardown_queries.iteritems():
+            for db_name, query in self.teardown_queries.items():
                 assert isinstance(v, (list, tuple)), "teardown_queries is of the form { 'db_name' : [ 'query1', 'query2' ] }"
                 db_conn = self.conn(db_name)
                 for query in queries:
@@ -98,8 +104,8 @@ class TestCase(unittest.TestCase):
         header, rows = rows[0], rows[1:]
         results = fetch_results(conn, sql)
 
-        expected = tableize_grid(header, rows)
-        actual   = tableize_obj_list(header, results)
+        expected = text_table(header, rows)
+        actual   = text_table(header, results, row_dicts = True)
 
         diff = list(difflib.unified_diff(expected.split('\n'), actual.split('\n'), n=20))
         if diff:

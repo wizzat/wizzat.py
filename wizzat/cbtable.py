@@ -1,54 +1,56 @@
-try:
-    import couchbase
-    import kvtable
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-    __all__ = [
-        'CBTable',
-    ]
+import couchbase
+import wizzat.kvtable
 
-    class CBTable(kvtable.KVTable):
-        """
-        This is a micro-ORM for working with Couchbase.  It attempts to work with CAS values
-        as much as possible for maximum safety.  It's relatively easy to structure concurrency
-        around KeyExistsError.
+__all__ = [
+    'CBTable',
+]
 
-        Relevant options (on top of KVTable options):
-        - replicate_to: int, the number of nodes to replicate the change to
-        - persist_to:   int, the number of nodes to persist (to disk) the change to
-        """
-        memoize       = False
-        table_name    = ''
-        key_fields    = []
-        fields        = []
-        persist_to    = 0
-        replicate_to  = 0
+class CBTable(wizzat.kvtable.KVTable):
+    """
+    This is a micro-ORM for working with Couchbase.  It attempts to work with CAS values
+    as much as possible for maximum safety.  It's relatively easy to structure concurrency
+    around KeyExistsError.
 
-        @classmethod
-        def _find_by_key(cls, kv_key):
-            try:
-                rv = cls.conn.get(kv_key)
-                return rv, rv.value
-            except couchbase.exceptions.NotFoundError:
-                return None, None
+    Relevant options (on top of KVTable options):
+    - replicate_to: int, the number of nodes to replicate the change to
+    - persist_to:   int, the number of nodes to persist (to disk) the change to
+    """
+    memoize       = False
+    table_name    = ''
+    key_fields    = []
+    fields        = []
+    persist_to    = 0
+    replicate_to  = 0
 
-        def _insert(self, force=False):
-            return self.conn.add(self._key, self._data,
-                persist_to   = self.persist_to,
-                replicate_to = self.replicate_to,
-            )
+    @classmethod
+    def _find_by_key(cls, kv_key):
+        try:
+            rv = cls.conn.get(kv_key)
+            return rv, rv.value
+        except couchbase.exceptions.NotFoundError:
+            return None, None
 
-        def _update(self, force=False):
-            return self.conn.set(self._key, self._data,
-                persist_to   = self.persist_to,
-                replicate_to = self.replicate_to,
-                cas          = self._kv_data.cas,
-            )
+    def _insert(self, force=False):
+        return self.conn.add(self._key, self._data,
+            persist_to   = self.persist_to,
+            replicate_to = self.replicate_to,
+        )
 
-        def _delete(self, force=False):
-            return self.conn.delete(self._key,
-                persist_to   = self.persist_to,
-                replicate_to = self.replicate_to,
-                cas          = self._kv_data.cas,
-            )
-except ImportError:
-    pass
+    def _update(self, force=False):
+        return self.conn.set(self._key, self._data,
+            persist_to   = self.persist_to,
+            replicate_to = self.replicate_to,
+            cas          = self._kv_data.cas,
+        )
+
+    def _delete(self, force=False):
+        return self.conn.delete(self._key,
+            persist_to   = self.persist_to,
+            replicate_to = self.replicate_to,
+            cas          = self._kv_data.cas,
+        )

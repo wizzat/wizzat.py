@@ -1,12 +1,18 @@
-import StringIO
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import collections
 import functools
 import itertools
 import os
+import six
 import sys
 import threading
 import time
-from util import (
+import wizzat.textutil
+from wizzat.util import (
     swallow,
     OfflineError,
     assert_online,
@@ -69,24 +75,24 @@ class MemoizeResults(object):
             - Hits
             - Misses
         """
-        import texttable
-        table = texttable.Texttable(0)
-        table.header([
-            'Function Name',
-            'Calls',
-            'Hits',
-            'Misses',
-        ])
 
-        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1]['call']):
-            table.add_row([
+        rows = []
+        for func, stats in sorted(six.iteritems(cls.stats), key=lambda x: x[1]['call']):
+            rows.append([
                 func.__name__,                                                      # 'Function Name',
                 stats['call'],                                                      # 'Calls',
                 stats['call'] - stats['miss'],                                      # 'Hits',
                 stats['miss'],                                                      # 'Misses',
             ])
 
-        return "Memoize Stats By Function\n\n" + table.draw()
+        table = wizzat.textutil.text_table([
+            'Function Name',
+            'Calls',
+            'Hits',
+            'Misses',
+        ], rows)
+
+        return "Memoize Stats By Function\n\n" + table
 
     @classmethod
     def format_csv(cls):
@@ -98,7 +104,7 @@ class MemoizeResults(object):
             - Hits
             - Misses
         """
-        fp = StringIO.StringIO()
+        fp = six.moves.cStringIO()
         fp.write(",".join([
             'Function Name',
             'Calls',
@@ -107,7 +113,7 @@ class MemoizeResults(object):
         ]))
         fp.write("\n")
 
-        for func, stats in sorted(cls.stats.iteritems(), key=lambda x: x[1]['call']):
+        for func, stats in sorted(six.iteritems(cls.stats), key=lambda x: x[1]['call']):
             fp.write(",".join([ str(x) for x in [
                 func.__name__,                                                      # 'Function Name',
                 stats['call'],                                                      # 'Calls',
@@ -132,7 +138,7 @@ def construct_cache_func_definition(threads, disable_kw, obj, verbose, **kwargs)
     if disable_kw:
         setup_key = "(func, args)"
     else:
-        setup_key = "(func, args, tuple(sorted(izip(kwargs.iteritems()))))"
+        setup_key = "(func, args, tuple(sorted(izip(iteritems(kwargs)))))"
 
     if obj:
         generate_cache = 'if not hasattr(args[0], "__memoize_cache__"): setattr(args[0], "__memoize_cache__", gen_cache())'
@@ -160,7 +166,7 @@ def memo_func(*args, **kwargs):
 """.format(**locals())
 
     if verbose:
-        print result
+        print(result)
 
     return result
 
@@ -174,8 +180,12 @@ def construct_cache_obj_definition(max_size, max_bytes, until, ignore_nulls, ver
 
     if max_bytes:
         byte_filter = "while self and self.current_size > self.max_bytes: self.popitem(False)"
+        bytes_incr  = "self.current_size += sys.getsizeof(value)"
+        bytes_decr  = "self.current_size -= sys.getsizeof(value)"
     else:
         byte_filter = ""
+        bytes_incr = ""
+        bytes_decr = ""
 
     if max_size:
         size_filter = "while self and len(self) > self.max_size: self.popitem(False)"
@@ -205,7 +215,7 @@ class Cache({superclass}):
 
     def __delitem__(self, key):
         value = {superclass}.__getitem__(self, key)
-        self.current_size -= sys.getsizeof(value)
+        {bytes_decr}
         {superclass}.__delitem__(self, key)
 
     def __getitem__(self, key):
@@ -216,13 +226,19 @@ class Cache({superclass}):
     def __setitem__(self, key, value):
         {remove_old_key}
         {until_call}
-        {null_filter}{superclass}.__setitem__(self, key, {result_expr}); self.current_size += sys.getsizeof(value)
+        {null_filter}{superclass}.__setitem__(self, key, {result_expr}); {bytes_incr}
         {byte_filter}
         {size_filter}
+
+    if sys.version_info.major >= 3:
+        def popitem(self, last=True):
+            key, value = {superclass}.popitem(self, last)
+            {bytes_decr}
+            return key, value
 """.format(**locals())
 
     if verbose:
-        print definition
+        print(definition)
 
     return definition
 
@@ -246,7 +262,7 @@ def create_cache_obj(**kwargs):
         'time'        : time,
     }
 
-    exec definition in namespace
+    six.exec_(definition, namespace)
     return namespace['Cache']()
 
 def create_cache_func(func, **kwargs):
@@ -261,12 +277,13 @@ def create_cache_func(func, **kwargs):
         'func'        : func,
         'stats'       : stats_obj,
         'cache'       : cache_obj,
-        'izip'        : itertools.izip,
+        'izip'        : six.moves.zip,
+        'iteritems'   : six.iteritems,
         'lock'        : threading.RLock(),
         'gen_cache'   : lambda: create_cache_obj(**kwargs),
     }
 
-    exec definition in namespace
+    six.exec_(definition, namespace)
     return namespace['memo_func']
 
 memoize_default_options = {
@@ -284,7 +301,7 @@ memoize_default_options = {
 def expand_memoize_args(kwargs):
     global memoize_default_options
     kwargs = set_defaults(kwargs, memoize_default_options)
-    if any(x not in memoize_default_options for x in kwargs.iterkeys()):
+    if any(x not in memoize_default_options for x in six.iterkeys(kwargs)):
         raise TypeError("Received unexpected arguments to @memoize")
 
     return kwargs
@@ -350,7 +367,7 @@ class BenchResults(object):
         def foo():
             print 'called foo!'
 
-        for x in xrange(100):
+        for x in range(100):
             foo()
 
         print BenchResults().format_stats() # Text table pretty
@@ -360,26 +377,25 @@ class BenchResults(object):
 
     @classmethod
     def format_stats(cls, skip_no_calls = False):
-        import texttable
-        table = texttable.Texttable(0)
-        table.header([
-            'Function',
-            'Sum Duration',
-            'Calls',
-        ])
-
-        for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+        rows = []
+        for k, v in sorted(six.iteritems(cls.results), key=lambda x: x[1][1]):
             if skip_no_calls and calls == 0:
                 continue
 
             func, cume_duration, calls = v
-            table.add_row([ k.__name__, cume_duration, calls ])
+            rows.append([ k.__name__, cume_duration, calls ])
 
-        return "Benchmark Results\n\n" + table.draw()
+        table = wizzat.textutil.text_table([
+            'Function',
+            'Sum Duration',
+            'Calls',
+        ], rows)
+
+        return "Benchmark Results\n\n" + table
 
     @classmethod
     def format_csv(cls, skip_no_calls = False):
-        fp = StringIO.StringIO()
+        fp = six.StringIO.StringIO()
 
         fp.write(", ".join([
             'Function',
@@ -388,7 +404,7 @@ class BenchResults(object):
         ]))
         fp.write("\n")
 
-        for k, v in sorted(cls.results.iteritems(), key=lambda x: x[1][1]):
+        for k, v in sorted(six.iteritems(cls.results), key=lambda x: x[1][1]):
             if skip_no_calls and calls == 0:
                 continue
 
@@ -398,7 +414,7 @@ class BenchResults(object):
 
     @classmethod
     def clear(cls):
-        for func, stats in cls.results.iteritems():
+        for func, stats in six.iteritems(cls.results):
             stats[1] = 0
             stats[2] = 0
 

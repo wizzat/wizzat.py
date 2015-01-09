@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 from wizzat.kvtable import *
 from wizzat.testutil import *
 from wizzat.util import *
@@ -126,7 +131,7 @@ class KVTableTest(DBTestCase):
         }
 
         self.assertJSONEqual(cls.key_cache['tbl/1/2']._data, expected_data)
-        self.assertEqual(cls.key_cache.keys(), [ 'tbl/1/2' ])
+        self.assertEqual(list(cls.key_cache.keys()), [ 'tbl/1/2' ])
 
         obj2 = cls.find_or_create(1,2,
             data1 = 'abc',
@@ -136,7 +141,7 @@ class KVTableTest(DBTestCase):
         self.assertTrue(obj1 is obj2)
         cls.clear_cache()
 
-        self.assertEqual(cls.key_cache.keys(), [])
+        self.assertEqual(list(cls.key_cache.keys()), [])
 
         obj3 = cls.find_or_create(1,2,
             data1 = 'abc',
