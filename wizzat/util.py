@@ -12,13 +12,18 @@ import os
 import re
 import shutil
 import six
+import socket
+import subprocess
 import sys
+import tarfile
 import tempfile
+import threading
 import types
 
 __all__ = [
     'Host',
     'OfflineError',
+    'UnsafeTarError',
     'assert_online',
     'carp',
     'chdir',
@@ -26,6 +31,7 @@ __all__ = [
     'filter_keys',
     'first_existing_path',
     'funcs',
+    'get_open_port',
     'import_class',
     'invert_dict',
     'is_online',
@@ -38,6 +44,7 @@ __all__ = [
     'parse_host',
     'parse_hosts',
     'reset_online',
+    'sanity_check_tar',
     'set_defaults',
     'set_online',
     'set_strict_defaults',
@@ -324,10 +331,13 @@ def set_strict_defaults(kwargs, defaults = {}, **default_values):
 
     return default_values
 
-def slurp(filename):
+def slurp(filename, must_exist=True):
     """
         Find the named file, read it into memory, and return it as a string.
     """
+    if not must_exist and not os.path.exists(filename):
+        return ''
+
     with open(filename, 'r') as fp:
         return fp.read()
 
@@ -375,6 +385,119 @@ def parse_host(host_string, default_port = ''):
 
 def parse_hosts(host_list, default_port):
     return [ parse_host(x) for x in host_list.split(',') ]
+
+def get_open_port():
+    """
+        Gets an open port on the system
+    """
+    sock = socket.socket()
+    sock.bind(("", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+
+    return port
+
+def download_file(url, dest_path = None, dest_dir = None, skip_if_exists = True):
+    if not dest_path and not dest_dir:
+        raise TypeError('Either dest_path or dest_dir must be passed in')
+
+    if not dest_path:
+        dest_path = os.path.join(dest_dir, os.path.basename(url))
+
+    if not os.path.exists(dest_path) or not skip_if_exists:
+        response = six.moves.urllib.request.urlopen(url)
+        with open(dest_path, 'wb') as fp:
+            fp.write(response.read())
+
+    return dest_path
+
+class UnsafeTarError(Exception): pass
+
+def extract_tarfile(filename, dest_dir, validate = True, gz = None):
+    """
+    Sanity checks the tar file to ensure there are no paths which escape.
+    In particular, looks for relative and absolute paths.
+
+    Params:
+    validate checks for unsafe tar files (member paths beginning with .. or /)
+    gz allows overriding the automatic detection of .tar.gz files
+
+    Returns the path to the extracted tar file (including the root paths)
+    """
+    if gz == False or not filename.endswith('.gz'):
+        mode = 'r'
+    else:
+        mode = 'r:gz'
+
+    mkdirp(dest_dir)
+    with tarfile.open(filename, mode) as fp:
+        # We make the bold assertion that the first file is the "root directory".
+        # This should hold if it is a substring of all member paths.
+        extract_dir = fp.getmembers()[0].name
+
+        for member in fp.getmembers():
+            if extract_dir and not member.name.startswith(extract_dir):
+                extract_dir = ''
+
+            if validate and member.name.startswith('/') or member.name.startswith('..'):
+                raise UnsafeTarError(member)
+
+        if len(fp.getmembers()) == 1:
+            extract_dir = ''
+
+        fp.extractall(dest_dir)
+
+    return os.path.join(dest_dir, extract_dir)
+
+subprocess_lock = threading.RLock()
+
+def run_cmd(cmdline, env = None, shell = False):
+    """
+    Executes a command, returns the return code and the merged stdout/stderr contents.
+    """
+    global subprocess_lock
+    try:
+        fp = tempfile.TemporaryFile()
+        with subprocess_lock:
+            child = subprocess.Popen(cmdline,
+                env     = env,
+                shell   = shell,
+                bufsize = 2,
+                stdout  = fp,
+                stderr  = fp,
+            )
+
+        return_code = child.wait()
+        fp.seek(0, 0)
+        output = fp.read()
+
+        return return_code, output
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            e.msg += '\n' + ' '.join(cmdline)
+        raise
+
+def run_daemon(cmdline, env = None, shell = False):
+    """
+    Executes a command, returns the subprocess object and the log file
+    """
+    global subprocess_lock
+    try:
+        fp = tempfile.NamedTemporaryFile(delete = False)
+        with subprocess_lock:
+            child = subprocess.Popen(cmdline,
+                env     = env,
+                shell   = shell,
+                bufsize = 2,
+                stdout  = fp,
+                stderr  = fp,
+            )
+
+        return child, fp.name
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            e.msg += '\n' + ' '.join(cmdline)
+        raise
 
 class OfflineError(Exception): pass
 
