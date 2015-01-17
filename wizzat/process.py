@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import abc
+import collections
 import errno
 import logging
 import os
@@ -122,7 +123,7 @@ class Service(object):
         self.kwargs = kwargs
         self.log_file = None
         self.log_offset = 0
-        self.last_mtime = None
+        self.log_mtime = None
         self.shutdown = None
 
     def poll(self):
@@ -184,8 +185,8 @@ class Cluster(threading.Thread):
         else:
             self.stop_all()
 
-    def join(self, timeout, kill = True):
-        end_time = now() + seconds(timeout)
+    def join(self, timeout = None, kill = True):
+        end_time = now() + seconds(timeout or float("inf"))
 
         self.kill = kill
         self.running = False
@@ -195,8 +196,7 @@ class Cluster(threading.Thread):
 
     def check_services(self):
         for name, service in self.services.items():
-            service.check()
-            service.update_log()
+            service.poll()
 
     def setup_cluster(self):
         pass
@@ -216,7 +216,7 @@ class Cluster(threading.Thread):
 
     def run_service(self, service):
         service.setup_service()
-        cmd, env = self.service.cmd()
+        cmd, env = service.cmd()
         service.child, service.log_file = run_daemon(cmd, env)
 
     def validate_services(self, services, timeout):
@@ -242,4 +242,4 @@ class Cluster(threading.Thread):
 
     def signal(self, name, signal):
         if self.services[name].child:
-            self.services[name].child.signal(signal)
+            self.services[name].child.send_signal(signal)
