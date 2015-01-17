@@ -4,15 +4,87 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import abc
+import errno
 import logging
 import os
+import os.path
 import signal
-import time
+import six
+import subprocess
+import tempfile
 import threading
+import time
 
-import wizzat.util
+subprocess_lock = threading.RLock()
 
-class StartupFailureError(Exception): pass
+def run_cmd(cmdline, env = None, shell = False):
+    """
+    Executes a command, returns the return code and the merged stdout/stderr contents.
+    """
+    global subprocess_lock
+    try:
+        fp = tempfile.TemporaryFile()
+        with subprocess_lock:
+            child = subprocess.Popen(cmdline,
+                env     = env,
+                shell   = shell,
+                bufsize = 2,
+                stdout  = fp,
+                stderr  = fp,
+            )
+
+        return_code = child.wait()
+        fp.seek(0, 0)
+        output = fp.read()
+
+        return return_code, output
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            e.msg += '\n' + ' '.join(cmdline)
+        raise
+
+
+def run_daemon(cmdline, env = None, shell = False):
+    """
+    Executes a command, returns the subprocess object and the log file
+    """
+    global subprocess_lock
+    try:
+        fp = tempfile.NamedTemporaryFile(delete = False)
+        with subprocess_lock:
+            child = subprocess.Popen(cmdline,
+                env     = env,
+                shell   = shell,
+                bufsize = 2,
+                stdout  = fp,
+                stderr  = fp,
+            )
+
+        return child, fp.name
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            e.msg += '\n' + ' '.join(cmdline)
+        raise
+
+
+def log_file_updates(log_func, filename, mtime = None, offset = None):
+    if not log_func or not filename or not os.path.exists(filename):
+        return mtime, offset
+
+    new_mtime = os.stat(filename).st_mtime
+
+    if new_mtime > mtime:
+        mtime = new_mtime
+        with open(filename, 'r') as fp:
+            fp.seek(offset)
+
+            for line in fp:
+                log_func(line[:-1])
+
+            offset = fp.tell()
+
+    return mtime, offset
+
 
 class AsyncFileTailer(threading.Thread):
     """
@@ -30,31 +102,51 @@ class AsyncFileTailer(threading.Thread):
         self.log_func = log_func
 
     def run(self):
-        offset = 0
-        mtime = new_mtime = os.stat(self.filename).st_mtime
-
         while True:
-            if os.path.exists(self.filename):
-                with open(self.filename, 'r') as fp:
-                    fp.seek(offset)
+            self.mtime, self.offset = log_file_updates(
+                self.log_func,
+                self.filename,
+                self.mtime,
+                self.offset
+            )
 
-                    for line in fp:
-                        line = line[:-1] # Trim the newline
-                        self.log_func(line)
-
-                    offset = fp.tell()
-
-            while mtime != new_mtime:
-                time.sleep(0.1)
-                new_mtime = os.stat(self.filename).st_mtime
+            time.sleep(0.1)
 
 
 class Service(object):
+    global_log = True
+
     def __init__(self, name, *args, **kwargs):
         self.name = name
         self.args = args
         self.kwargs = kwargs
-        self.log_func = self.kwargs.get('log_func', logging.info)
+        self.log_file = None
+        self.log_offset = 0
+        self.last_mtime = None
+        self.shutdown = None
+
+    def poll(self):
+        if not self.child:
+            return
+
+        logger = logging.getLogger(self.name)
+        self.log_mtime, self.log_offset = log_file_updates(
+            logger.info,
+            self.log_file,
+            self.log_mtime,
+            self.log_offset,
+        )
+
+        self.update_log()
+        exit_code = self.child.poll()
+
+        if exit_code and not self.shutdown:
+            logging.critical('Service failed: %d', exit_code)
+            raise ServiceFailureError(self.name)
+
+    def update_log(self):
+        if not self.global_log:
+            return
 
     def setup_service(self):
         pass
@@ -66,107 +158,88 @@ class Service(object):
     def teardown_service(self):
         pass
 
-    def validate_startup(self, filename):
+    def validate_startup(self):
         pass
 
 
-class SpawnedService(threading.Thread):
-    def __init__(self, service):
-        super(SpawnedService, self).__init__()
-        self.service = service
-
-        self.shutting_down = False
-        self.child = None
-        self.wait_for_pattern = None
-        self.validated = False
-
-    def run(self):
-        try:
-            self.service.setup_service()
-            self.child, self.log_file = wizzat.util.run_daemon(*self.service.cmd())
-            self.service.validate_startup(self.log_file)
-            self.service.log_func('%s -- %s', self.service.name, self.log_file)
-            self.validated = True
-
-            while self.child.poll() is None:
-                time.sleep(0.1)
-
-            if not self.shutting_down:
-                raise RuntimeError("Subprocess has died.")
-        finally:
-            self.service.teardown_service()
-
-    def signal(self, sig):
-        if sig in (signal.SIGTERM, signal.SIGKILL):
-            self.shutting_down = True
-
-        self.child.send_signal(sig)
-
-    def kill(self):
-        self.signal(signal.SIGKILL)
-
-    def terminate(self):
-        self.signal(signal.SIGTERM)
-
-    def pause(self):
-        self.signal(signal.SIGSTOP)
-
-    def resume(self):
-        self.signal(signal.SIGCONT)
-
-    def wait_for_validation(self, timeout):
-        t1 = time.time()
-
-        while not self.validated:
-            if time.time() - t1 > timeout:
-                raise StartupFailureError(self.service.name)
-            time.sleep(0.1)
-
-
-class SpawnedCluster(object):
+class Cluster(threading.Thread):
     def __init__(self, *args, **kwargs):
-        self.args     = args
-        self.kwargs   = kwargs
+        super(Cluster, self).__init__()
+
+        self.args = args
+        self.kwargs = kwargs
         self.services = {}
-        self.log_func = kwargs.get('log_func', logging.info)
+        self.running = True
+        self.kill = True
 
         self.setup_cluster()
+
+    def run(self):
+        while self.running:
+            self.check_services()
+            time.sleep(0.1)
+
+        if self.kill:
+            self.kill_all()
+        else:
+            self.stop_all()
+
+    def join(self, timeout, kill = True):
+        end_time = now() + seconds(timeout)
+
+        self.kill = kill
+        self.running = False
+
+        while len(self.services) > 0 and now() < end_time:
+            time.sleep(0.1)
+
+    def check_services(self):
+        for name, service in self.services.items():
+            service.check()
+            service.update_log()
 
     def setup_cluster(self):
         pass
 
-    def add_service(self, service, timeout):
-        self.services[service.name] = ss = SpawnedService(service)
-        ss.start()
-        ss.wait_for_validation(timeout)
-        setattr(self, service.name, ss)
+    def add_service(self, service, timeout = None):
+        self.run_service(service)
 
-    def add_services(self, services, timeout):
-        end_time = time.time() + timeout
+        self.services[service.name] = service
+        self.validate_services([service], timeout)
 
+    def add_services(self, services, timeout = None):
         for service in services:
-            self.services[service.name] = SpawnedService(service)
-            self.services[service.name].start()
+            self.run_service(service)
+            self.services[service.name] = service
 
-            setattr(self, service.name, self.services[service.name])
+        self.validate_services(services, timeout)
 
-        for service in services:
-            self.services[service.name].wait_for_validation(end_time - time.time())
+    def run_service(self, service):
+        service.setup_service()
+        cmd, env = self.service.cmd()
+        service.child, service.log_file = run_daemon(cmd, env)
 
-    def kill_all(self, termination_timeout):
-        self.signal_all(signal.SIGKILL, termination_timeout)
+    def validate_services(self, services, timeout):
+        end_time = now() + seconds(timeout)
+        services = collections.deque(services)
 
-    def stop_all(self, termination_timeout):
-        self.signal_all(signal.SIGTERM, termination_timeout)
+        while services and now() < end_time:
+            service = services.popleft()
+            if not service.validate_startup():
+                services.append(service)
 
-    def signal_all(self, signal, termination_timeout = None):
-        end_time = time.time() + termination_timeout
-        for name, ss in self.services.items():
-            ss.signal(signal)
+        return len(services) == 0
 
-        if termination_timeout:
-            for name, ss in self.services.items():
-                ss.join(time.time() - termination_timeout)
-                return False
+    def kill_all(self):
+        self.signal_all(signal.SIGKILL)
 
-        return True
+    def stop_all(self):
+        self.signal_all(signal.SIGTERM)
+
+    def signal_all(self, signal):
+        for name in self.services:
+            self.signal(name, signal)
+
+    def signal(self, name, signal):
+        if self.services[name].child:
+            self.services[name].child.signal(signal)

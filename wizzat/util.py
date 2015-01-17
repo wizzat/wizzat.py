@@ -449,56 +449,6 @@ def extract_tarfile(filename, dest_dir, validate = True, gz = None):
 
     return os.path.join(dest_dir, extract_dir)
 
-subprocess_lock = threading.RLock()
-
-def run_cmd(cmdline, env = None, shell = False):
-    """
-    Executes a command, returns the return code and the merged stdout/stderr contents.
-    """
-    global subprocess_lock
-    try:
-        fp = tempfile.TemporaryFile()
-        with subprocess_lock:
-            child = subprocess.Popen(cmdline,
-                env     = env,
-                shell   = shell,
-                bufsize = 2,
-                stdout  = fp,
-                stderr  = fp,
-            )
-
-        return_code = child.wait()
-        fp.seek(0, 0)
-        output = fp.read()
-
-        return return_code, output
-    except OSError as e:
-        if e.errno == errno.ENOENT:
-            e.msg += '\n' + ' '.join(cmdline)
-        raise
-
-def run_daemon(cmdline, env = None, shell = False):
-    """
-    Executes a command, returns the subprocess object and the log file
-    """
-    global subprocess_lock
-    try:
-        fp = tempfile.NamedTemporaryFile(delete = False)
-        with subprocess_lock:
-            child = subprocess.Popen(cmdline,
-                env     = env,
-                shell   = shell,
-                bufsize = 2,
-                stdout  = fp,
-                stderr  = fp,
-            )
-
-        return child, fp.name
-    except OSError as e:
-        if e.errno == errno.ENOENT:
-            e.msg += '\n' + ' '.join(cmdline)
-        raise
-
 class OfflineError(Exception): pass
 
 def assert_online():
