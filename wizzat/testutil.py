@@ -1,9 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
-import six
 import unittest, difflib, functools, os, json
 from wizzat.sqlhelper import fetch_results
 from wizzat.util import assert_online, OfflineError, reset_online, set_online, is_online

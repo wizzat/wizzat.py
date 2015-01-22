@@ -1,10 +1,8 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
+from future.utils import with_metaclass
 
 import copy
-import six
 import types
 import wizzat.decorators
 from wizzat.pghelper import *
@@ -24,14 +22,14 @@ class DBTableImmutableFieldError(DBTableError): pass
 class DBTableMeta(type):
     def __init__(cls, name, bases, dct):
         super(DBTableMeta, cls).__init__(name, bases, dct)
-        if 'table_name' not in dct or not isinstance(dct['table_name'], six.string_types):
+        if 'table_name' not in dct or not isinstance(dct['table_name'], str):
             raise DBTableConfigError("table_name is required, and should be a string")
 
         if 'fields' not in dct or not isinstance(dct['fields'], (list, tuple)):
             raise DBTableConfigError("fields is required, and should be a list or tuple")
 
         if 'id_field' in dct:
-            if not isinstance(dct['id_field'], (type(None), six.string_types)):
+            if not isinstance(dct['id_field'], (type(None), str)):
                 raise DBTableConfigError('id_field is not required, but should be a string or None')
         else:
             cls.id_field = None
@@ -40,7 +38,7 @@ class DBTableMeta(type):
             if not isinstance(dct['key_fields'], (list, tuple)):
                 raise DBTableConfigError('key_fields is not required, but should be a list of strings or None')
             for field in dct['key_fields']:
-                if not isinstance(field, six.string_types):
+                if not isinstance(field, str):
                     raise DBTableConfigError('key_fields is not required, but should be a list of strings or None')
         else:
             cls.key_fields = []
@@ -72,8 +70,7 @@ class DBTableMeta(type):
                 cls.default_funcs[field] = dct[func_name]
 
 
-@six.add_metaclass(DBTableMeta)
-class DBTable(object):
+class DBTable(with_metaclass(DBTableMeta)):
     """
     This is a micro-ORM for the purposes of not having dependencies on Django or SQLAlchemy.
     Philosophically, it also supports merely the object abstraction and super simple sql generation.

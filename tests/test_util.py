@@ -1,11 +1,8 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
 import datetime
 import os
-import six
 import tempfile
 import time
 import uuid
@@ -82,11 +79,16 @@ class TestUtil(TestCase):
         self.assertEqual(first_existing_path(doesnt_exist1, doesnt_exist2), None)
 
     def test_load_paths(self):
-        path = load_paths(str, __file__, 'testdateutil.py')
-        self.assertIsInstance(path, six.string_types)
+        existing_file = os.path.join(os.path.dirname(__file__), 'test_util.py')
+
+        data1 = load_paths(None, existing_file, str(uuid.uuid4()))
+        data2 = load_paths(None, str(uuid.uuid4()), existing_file)
+
+        self.assertIsInstance(data1, str)
+        self.assertEqual(data1, data2)
 
         with self.assertRaises(ValueError):
-            load_paths(str, str(uuid.uuid4()))
+            load_paths(None, str(uuid.uuid4()))
 
     def test_json_path(self):
         obj = {

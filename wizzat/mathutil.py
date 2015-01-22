@@ -1,11 +1,9 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
+from future.utils import iteritems
 
 import collections
 import math
-import six
 
 __all__ = [
     'avg',
@@ -76,7 +74,7 @@ class Percentile(object):
         target = pct * self.num_values
         ct = 0
 
-        for idx, value in sorted(six.iteritems(self.values)):
+        for idx, value in sorted(iteritems(self.values)):
             ct += value 
             if ct >= target:
                 break

@@ -1,14 +1,11 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
 import calendar
 import contextlib
 import datetime
 import numbers
 import pytz
-import six
 
 __all__ = [
     'clear_date_formats',
@@ -206,7 +203,7 @@ def coerce_day(dt):
         return from_epoch_millis(dt).date()
     elif isinstance(dt, numbers.Number):
         return from_epoch(dt).date()
-    elif isinstance(dt, six.string_types):
+    elif isinstance(dt, str):
         return parse_date(dt).date()
     else:
         return datetime.date(dt)
@@ -226,7 +223,7 @@ def coerce_date(dt):
         return from_epoch_millis(dt)
     elif isinstance(dt, numbers.Number):
         return from_epoch(dt)
-    elif isinstance(dt, six.string_types):
+    elif isinstance(dt, str):
         return parse_date(dt)
     else:
         return datetime.datetime(dt)

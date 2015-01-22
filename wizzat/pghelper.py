@@ -1,7 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
+from future.utils import iteritems
 
 try:
     from psycopg2cffi import compat
@@ -9,24 +8,26 @@ try:
 except ImportError:
     pass
 
-import six
-import copy, tempfile, types
+import collections
+import io
+
 import psycopg2, psycopg2.extras, psycopg2.pool
-from types import *
 from wizzat.sqlhelper import *
 from wizzat.util import set_defaults
 
 __all__ = [
-    #'vacuum',
     'ConnMgr',
+    'PgIntegrityError',
+    'PgOperationalError',
+    'PgProgrammingError',
     'analyze',
     'copy_from',
     'copy_from_rows',
     'currval',
     'drop_table',
     'execute',
-    'fetch_results',
     'fetch_one',
+    'fetch_results',
     'iter_results',
     'nextval',
     'relation_info',
@@ -34,10 +35,8 @@ __all__ = [
     'sql_where_from_params',
     'table_columns',
     'table_exists',
+    'vacuum',
     'view_exists',
-    'PgIntegrityError',
-    'PgOperationalError',
-    'PgProgrammingError',
 ]
 
 PgIntegrityError   = psycopg2.IntegrityError
@@ -60,7 +59,7 @@ def copy_from_rows(conn, table_name, columns, rows):
 
     This method requires postgresql
     """
-    fp = six.StringIO.StringIO()
+    fp = io.StringIO()
     for row in rows:
         fp.write('\t'.join(row))
         fp.write('\n')
@@ -168,17 +167,23 @@ def sql_where_from_params(**kwargs):
     Lists and tuples become in clauses
     """
     clauses = [ 'true' ]
-    for key, value in sorted(six.iteritems(kwargs)):
-        if isinstance(value, list) or isinstance(value, tuple):
+    type_handler = collections.OrderedDict()
+    type_handler[type(None)] = "{0} is null"
+    type_handler[list]       = "{0} in (%({0})s)"
+    type_handler[tuple]      = "{0} in %({0})s"
+
+    for key, value in sorted(iteritems(kwargs)):
+        if isinstance(value, (tuple, list)):
             if not value:
                 clauses = [ 'true = false' ]
                 break
 
-        clauses.append({
-            type(None) : "{0} is null".format(key),
-            list       : "{0} in (%({0})s)".format(key),
-            tuple      : "{0} in %({0})s".format(key),
-        }.get(type(value), "{0} = %({0})s".format(key)))
+        for proposed_type, pattern in iteritems(type_handler):
+            if isinstance(value, proposed_type):
+                clauses.append(pattern.format(key))
+                break
+        else:
+            clauses.append("{0} = %({0})s".format(key))
 
     return ' and '.join(clauses)
 
@@ -263,11 +268,11 @@ class ConnMgr(object):
         self.pool.putconn(conn)
 
     def commit(self):
-        for key, conn in six.iteritems(self.connections):
+        for key, conn in iteritems(self.connections):
             conn.commit()
 
     def rollback(self):
-        for key, conn in six.iteritems(self.connections):
+        for key, conn in iteritems(self.connections):
             conn.rollback()
 
     def putall(self):

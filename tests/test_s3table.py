@@ -1,7 +1,5 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
 import boto, boto.exception, boto.s3, boto.s3.key, json, time
 from wizzat.s3table import *
@@ -104,7 +102,7 @@ class S3TableTest(DBTestCase):
         }
 
         self.assertJSONEqual(cls.key_cache['tbl/1/4']._data, expected_data)
-        self.assertEqual(cls.key_cache.keys(), [ 'tbl/1/4' ])
+        self.assertEqual(list(cls.key_cache.keys()), [ 'tbl/1/4' ])
 
         obj2 = cls.find_or_create(1,4,
             data1 = 'abc',
@@ -114,7 +112,7 @@ class S3TableTest(DBTestCase):
         self.assertTrue(obj1 is obj2)
         cls.clear_cache()
 
-        self.assertEqual(cls.key_cache.keys(), [])
+        self.assertEqual(list(cls.key_cache.keys()), [])
 
         obj3 = cls.find_or_create(1,4,
             data1 = 'abc',

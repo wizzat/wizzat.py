@@ -1,16 +1,17 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
+from future.utils import exec_, iteritems, iterkeys
 
 import collections
 import functools
+import io
+import io
 import itertools
 import os
-import six
 import sys
 import threading
 import time
+
 import wizzat.textutil
 from wizzat.util import (
     swallow,
@@ -77,7 +78,7 @@ class MemoizeResults(object):
         """
 
         rows = []
-        for func, stats in sorted(six.iteritems(cls.stats), key=lambda x: x[1]['call']):
+        for func, stats in sorted(iteritems(cls.stats), key=lambda x: x[1]['call']):
             rows.append([
                 func.__name__,                                                      # 'Function Name',
                 stats['call'],                                                      # 'Calls',
@@ -104,7 +105,7 @@ class MemoizeResults(object):
             - Hits
             - Misses
         """
-        fp = six.moves.cStringIO()
+        fp = io.StringIO()
         fp.write(",".join([
             'Function Name',
             'Calls',
@@ -113,7 +114,7 @@ class MemoizeResults(object):
         ]))
         fp.write("\n")
 
-        for func, stats in sorted(six.iteritems(cls.stats), key=lambda x: x[1]['call']):
+        for func, stats in sorted(iteritems(cls.stats), key=lambda x: x[1]['call']):
             fp.write(",".join([ str(x) for x in [
                 func.__name__,                                                      # 'Function Name',
                 stats['call'],                                                      # 'Calls',
@@ -138,7 +139,7 @@ def construct_cache_func_definition(threads, disable_kw, obj, verbose, **kwargs)
     if disable_kw:
         setup_key = "(func, args)"
     else:
-        setup_key = "(func, args, tuple(sorted(izip(iteritems(kwargs)))))"
+        setup_key = "(func, args, tuple(sorted(zip(iteritems(kwargs)))))"
 
     if obj:
         generate_cache = 'if not hasattr(args[0], "__memoize_cache__"): setattr(args[0], "__memoize_cache__", gen_cache())'
@@ -262,7 +263,7 @@ def create_cache_obj(**kwargs):
         'time'        : time,
     }
 
-    six.exec_(definition, namespace)
+    exec_(definition, namespace)
     return namespace['Cache']()
 
 def create_cache_func(func, **kwargs):
@@ -277,13 +278,13 @@ def create_cache_func(func, **kwargs):
         'func'        : func,
         'stats'       : stats_obj,
         'cache'       : cache_obj,
-        'izip'        : six.moves.zip,
-        'iteritems'   : six.iteritems,
+        'zip'         : zip,
+        'iteritems'   : iteritems,
         'lock'        : threading.RLock(),
         'gen_cache'   : lambda: create_cache_obj(**kwargs),
     }
 
-    six.exec_(definition, namespace)
+    exec_(definition, namespace)
     return namespace['memo_func']
 
 memoize_default_options = {
@@ -301,7 +302,7 @@ memoize_default_options = {
 def expand_memoize_args(kwargs):
     global memoize_default_options
     kwargs = set_defaults(kwargs, memoize_default_options)
-    if any(x not in memoize_default_options for x in six.iterkeys(kwargs)):
+    if any(x not in memoize_default_options for x in iterkeys(kwargs)):
         raise TypeError("Received unexpected arguments to @memoize")
 
     return kwargs
@@ -378,7 +379,7 @@ class BenchResults(object):
     @classmethod
     def format_stats(cls, skip_no_calls = False):
         rows = []
-        for k, v in sorted(six.iteritems(cls.results), key=lambda x: x[1][1]):
+        for k, v in sorted(iteritems(cls.results), key=lambda x: x[1][1]):
             if skip_no_calls and calls == 0:
                 continue
 
@@ -395,7 +396,7 @@ class BenchResults(object):
 
     @classmethod
     def format_csv(cls, skip_no_calls = False):
-        fp = six.StringIO.StringIO()
+        fp = io.StringIO()
 
         fp.write(", ".join([
             'Function',
@@ -404,7 +405,7 @@ class BenchResults(object):
         ]))
         fp.write("\n")
 
-        for k, v in sorted(six.iteritems(cls.results), key=lambda x: x[1][1]):
+        for k, v in sorted(iteritems(cls.results), key=lambda x: x[1][1]):
             if skip_no_calls and calls == 0:
                 continue
 
@@ -414,7 +415,7 @@ class BenchResults(object):
 
     @classmethod
     def clear(cls):
-        for func, stats in six.iteritems(cls.results):
+        for func, stats in iteritems(cls.results):
             stats[1] = 0
             stats[2] = 0
 

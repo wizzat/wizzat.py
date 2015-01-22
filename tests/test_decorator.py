@@ -1,9 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
-import six
 import sys
 import threading
 import time
@@ -207,7 +204,7 @@ class MemoizeTest(TestCase):
         pass
 
     def test_all_options_have_tests(self):
-        for k, v in six.iteritems(wizzat.decorators.memoize_default_options):
+        for k, v in wizzat.decorators.memoize_default_options.items():
             self.assertTrue(
                 hasattr(self, 'test_option__{}'.format(k)),
                 "Test for {} does not exist".format(k)
@@ -221,7 +218,7 @@ class MemoizeTest(TestCase):
         if len(kw) == len(self.options):
             yield kw
         else:
-            for k, v in sorted(six.iteritems(self.options)):
+            for k, v in sorted(self.options.items()):
                 if k in kw:
                     continue
 
@@ -237,18 +234,22 @@ class MemoizeTest(TestCase):
         f=F()
 
         for option in self.gen_options():
-            @memoize(**option)
-            def func(*args, **kwargs):
-                return range(3)
+            try:
+                @memoize(**option)
+                def func(*args, **kwargs):
+                    return list(range(3))
 
-            if not option['obj']:
-                func()
-            func(f, 2, 3, a = 1, b = 2)
-            func(f, 2, 3, a = 1, b = 3)
-            func(f, 2, 4, a = 1, b = 2)
-            if option['until']:
-                time.sleep(0.2)
-            func(f, 2, 3, a = 1, b = 3)
+                if not option['obj']:
+                    func()
+                func(f, 2, 3, a = 1, b = 2)
+                func(f, 2, 3, a = 1, b = 3)
+                func(f, 2, 4, a = 1, b = 2)
+                if option['until']:
+                    time.sleep(0.2)
+                func(f, 2, 3, a = 1, b = 3)
+            except Exception as e:
+                print(option)
+                raise
 
     def test_memoize_results(self):
         @memoize()

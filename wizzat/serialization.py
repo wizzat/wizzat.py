@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
+from future.utils import native_str, iteritems
 
-import six
 import collections, struct, zlib
 from wizzat.decorators import *
 from wizzat.util import chunks
@@ -17,7 +15,7 @@ __all__ = [
 
 @memoize()
 def structs(code):
-    return [ struct.Struct(str('<{}{}'.format(ct, code))) for ct in range(251) ]
+    return [ struct.Struct(native_str('<{}{}'.format(ct, code))) for ct in range(251) ]
 
 def pack_iterable(itr, type_code, compress = False):
     """
@@ -35,8 +33,8 @@ def unpack_iterable(s, type_code, compressed = False):
     """
     This is a wrapper around struct.unpack for unpacking arrays of homogeneous data.
     """
-    if not isinstance(s, six.binary_type):
-        s = six.binary_type(s)
+    if not isinstance(s, bytes):
+        raise TypeError()
 
     if compressed:
         s = zlib.decompress(s)
@@ -53,7 +51,7 @@ def unpack_iterable(s, type_code, compressed = False):
 
     return output
 
-bmstruct = struct.Struct(str('<QI'))
+bmstruct = struct.Struct(native_str('<QI'))
 istructs = structs('I')
 def write_int_set(itr, compress = False):
     """
@@ -67,12 +65,12 @@ def write_int_set(itr, compress = False):
         offset   = element % 64
         parts[part_idx] |= (1 << offset)
 
-    for part_idx, bitmask in six.iteritems(parts):
+    for part_idx, bitmask in iteritems(parts):
         buckets[bitmask].append(part_idx)
 
     output_list = [ istructs[1].pack(len(buckets)) ]
 
-    for bitmask, part_indexes in six.iteritems(buckets):
+    for bitmask, part_indexes in iteritems(buckets):
         output_list.append( bmstruct.pack(bitmask, len(part_indexes)) )
         for chunk in chunks(part_indexes, 250):
             output_list.append( istructs[len(chunk)].pack(*chunk) )
@@ -92,7 +90,7 @@ def read_int_set(s, compressed = False):
     num_elements, = istructs[1].unpack_from(s, 0)
     ptr += istructs[1].size
 
-    for _ in six.moves.xrange(num_elements):
+    for _ in range(num_elements):
         bitmask, num_indexes = bmstruct.unpack_from(s, ptr)
         ptr += bmstruct.size
         bitmask_offsets = [ x for x in range(64) if bitmask & (1<<x) ]

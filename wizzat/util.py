@@ -1,17 +1,16 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
+from future.utils import iteritems, itervalues
 
 import collections
 import contextlib
 import errno
+import functools
 import inspect
 import json
 import os
 import re
 import shutil
-import six
 import socket
 import subprocess
 import sys
@@ -139,11 +138,11 @@ def invert_dict(d, many = False):
         { 2 : [ 1, 2, 3 ] }
     """
     if not many:
-        return { v : k for k, v in six.iteritems(d) }
+        return { v : k for k, v in iteritems(d) }
 
     output = collections.defaultdict(list)
 
-    for k, v in six.iteritems(d):
+    for k, v in iteritems(d):
         output[v].append(k)
 
     return dict(output)
@@ -190,6 +189,9 @@ def first_existing_path(*paths):
     return None
 
 def load_paths(func, *paths):
+    if not func:
+        func = lambda x: x
+
     path = first_existing_path(*paths)
     if not path:
         raise ValueError()
@@ -215,7 +217,7 @@ def merge_dicts(*iterable):
 
         See http://dietbuddha.blogspot.com/2013/04/python-expression-idiom-merging.html
     """
-    return six.moves.reduce(lambda a, b: a.update(b) or a, iterable, {})
+    return functools.reduce(lambda a, b: a.update(b) or a, iterable, {})
 
 def swallow(err_type, func, *args, **kwargs):
     """
@@ -273,7 +275,7 @@ def import_class(name):
 
         See: http://stackoverflow.com/questions/547829/how-to-dynamically-load-a-python-class
     """
-    if not isinstance(name, six.string_types):
+    if not isinstance(name, str):
         return name
 
     package    = ".".join(name.split(".")[: - 1])
@@ -291,7 +293,7 @@ def chunks(iterable, chunk_size):
             for element in chunk:
                 element.perform_operation()
     """
-    for chunk_no in six.moves.xrange(0, len(iterable), chunk_size):
+    for chunk_no in range(0, len(iterable), chunk_size):
         yield iterable[chunk_no:chunk_no+chunk_size]
 
 def set_defaults(kwargs, defaults = {}, **default_values):
@@ -324,7 +326,7 @@ def set_strict_defaults(kwargs, defaults = {}, **default_values):
     if defaults:
         default_values = dict(defaults)
 
-    for k, v in six.iteritems(kwargs):
+    for k, v in iteritems(kwargs):
         if k not in default_values:
             raise TypeError("Unexpected paramter: " + k)
         default_values[k] = v
@@ -345,7 +347,7 @@ def funcs(obj):
     """
         Returns the functions on object (or, callables)
     """
-    return filter(callable, six.itervalues(obj.__dict__))
+    return filter(callable, itervalues(obj.__dict__))
 
 def filter_keys(keys, dictionary, error = True):
     """
@@ -359,7 +361,7 @@ def filter_keys(keys, dictionary, error = True):
 
 def json_copy(obj):
     if isinstance(obj, dict):
-        return { k : (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for k, v in six.iteritems(obj) }
+        return { k : (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for k, v in iteritems(obj) }
     elif isinstance(obj, (list, tuple)):
         return [ (json_copy(v) if isinstance(v, (dict, list, tuple)) else v) for v in obj ]
     else:
@@ -381,7 +383,7 @@ def parse_host(host_string, default_port = ''):
     try:
         return Host(*(x.strip() for x in host_string.split(':')))
     except (TypeError, ValueError) as e:
-        return Host(host_string, six.text_type(default_port))
+        return Host(host_string, str(default_port))
 
 def parse_hosts(host_list, default_port):
     return [ parse_host(x) for x in host_list.split(',') ]
@@ -405,7 +407,7 @@ def download_file(url, dest_path = None, dest_dir = None, skip_if_exists = True)
         dest_path = os.path.join(dest_dir, os.path.basename(url))
 
     if not os.path.exists(dest_path) or not skip_if_exists:
-        response = six.moves.urllib.request.urlopen(url)
+        response = urllib.request.urlopen(url)
         with open(dest_path, 'wb') as fp:
             fp.write(response.read())
 

@@ -1,9 +1,9 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
+from future.utils import iteritems
 
-import six
+import io
+
 from wizzat.util import set_strict_defaults
 import wizzat.decorators
 
@@ -39,12 +39,12 @@ def set_formatter(obj_type, func):
 
 def format_value(obj, trunc_len = None):
     global format_rules
-    for rule_type, rule_func in sorted(six.iteritems(format_rules)):
+    for rule_type, rule_func in sorted(iteritems(format_rules)):
         if isinstance(obj, rule_type):
             formatted_value = rule_func(obj)
             break
     else:
-        formatted_value = six.text_type(obj)
+        formatted_value = str(obj)
 
     if trunc_len and len(formatted_value) > trunc_len:
         return formatted_value[:trunc_len]
@@ -81,7 +81,7 @@ def text_table(header, rows, **options):
     header_sep = _format_hline(field_sizes, '=', '+')
     row_sep = _format_hline(field_sizes, '-', '+')
 
-    fp = six.moves.cStringIO()
+    fp = io.StringIO()
     fp.write(row_sep)
     fp.write(_format_row(field_sizes, header))
     fp.write(header_sep)

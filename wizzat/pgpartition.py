@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function, unicode_literals)
+from builtins import *
 
 import datetime
-import six
 from wizzat.dateutil import *
 from wizzat.pghelper import execute, table_exists
 
@@ -145,7 +142,7 @@ def _part_format_value(value):
         return "'{}'::timestamp".format(format_date(value))
     elif isinstance(value, datetime.date):
         return "'{}'::date".format(format_day(value))
-    elif isinstance(value, six.string_types):
+    elif isinstance(value, str):
         return "'{}'".format(value)
     else:
         return value
