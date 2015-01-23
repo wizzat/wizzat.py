@@ -10,6 +10,7 @@ except ImportError:
 
 import collections
 import io
+import threading
 
 import psycopg2, psycopg2.extras, psycopg2.pool
 from wizzat.sqlhelper import *
@@ -187,98 +188,29 @@ def sql_where_from_params(**kwargs):
 
     return ' and '.join(clauses)
 
+def pg_conn(conn_info):
+    conn_info = set_defaults(conn_info,
+        cursor_factory = psycopg2.extras.DictCursor,
+        autocommit     = False,
+    )
+    autocommit = conn_info.pop('autocommit')
+
+    conn = psycopg2.connect(**conn_info)
+    conn.autocommit = autocommit
+
+    return conn
+
 ##############################################################################################################
 
+import wizzat.objpool
 
-class ConnMgr(object):
-    """
-    A PostgreSQL connection manager supporting 'named connections' and connection pooling.
-
-    Example:
-        m = ConnMgr(
-            **db_conn_info
-            minconn = 0,
-            maxconn = 5,
-        )
-
-        conn1 = m.conn
-        conn2 = m.iterconn
-        conn3 = m.lockconn
-        conn4 = m.fooconn
-        conn5 = m.abcconn
-        conn6 = m.defconn # This will hang
-        m.putconn('abcconn')
-        # Conn6 now unblocks
-
-    Another pattern of use:
-        m = ConnMgr.default_from_info(**config)
-        conn1 = m.conn
-
-        m = ConnMgr.default_from_info(**config)
-        conn2 = m.conn
-        conn3 = m.conn2
-
-        conn1 == conn2
-        conn2 != conn3
-    """
-    all_mgrs = []
-    def __init__(self, **conn_info):
+class ConnMgr(wizzat.objpool.ObjPool):
+    def __init__(self, conn_info, **kwargs):
         self.conn_info = conn_info
-        self.minconn   = self.conn_info.pop('minconn', 0)
-        self.maxconn   = self.conn_info.pop('maxconn', 5)
-        self.conn_info.setdefault('cursor_factory', psycopg2.extras.DictCursor)
-        self.pool      = psycopg2.pool.ThreadedConnectionPool(self.minconn, self.maxconn, **self.conn_info)
-        self.connections = {}
-        self.all_mgrs.append(self)
+        super().__init__(**kwargs)
 
-    default_mgr = None
-    @classmethod
-    def default(cls):
-        return cls.default_mgr
+    def new_func(self):
+        return pg_conn(self.conn_info)
 
-    @classmethod
-    def default_from_info(cls, **info):
-        if not cls.default_mgr or cls.default_mgr.pool.closed:
-            mgr = cls(**info)
-            mgr.setdefault()
-
-        return cls.default_mgr
-
-    def setdefault(self):
-        type(self).default_mgr = self
-
-    def getconn(self, name):
-        if not hasattr(self, name):
-            conn = self.pool.getconn()
-            conn.autocommit = False
-            self.connections[name] = conn
-            setattr(self, name, conn)
-
-        return getattr(self, name)
-
-    def putconn(self, name, commit = True):
-        conn = self.connections.pop(name)
-        delattr(self, name)
-
-        if commit:
-            conn.commit()
-        else:
-            conn.rollback()
-
-        self.pool.putconn(conn)
-
-    def commit(self):
-        for key, conn in iteritems(self.connections):
-            conn.commit()
-
-    def rollback(self):
-        for key, conn in iteritems(self.connections):
-            conn.rollback()
-
-    def putall(self):
-        for k in self.connections.keys():
-            self.putconn(k)
-
-    def closeall(self):
-        self.putall()
-        self.pool.closeall()
+    def put_func(self, conn):
+        conn.rollback()

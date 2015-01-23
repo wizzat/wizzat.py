@@ -31,9 +31,10 @@ class DBTableTest(DBTestCase):
 
     def setUp(self):
         super(DBTableTest, self).setUp()
-        self.db_mgr.getconn('conn').rollback()
-        FooTable.conn = self.db_mgr.getconn('conn')
-        BarTable.conn = self.db_mgr.getconn('conn')
+        self.db_mgr.yield_all()
+
+        FooTable.conn = self.db_mgr.name('conn')
+        BarTable.conn = self.db_mgr.name('conn')
 
         execute(self.conn(), "DROP TABLE IF EXISTS foo")
         execute(self.conn(), "CREATE TABLE foo (a INTEGER, b INTEGER DEFAULT 1)")
@@ -201,4 +202,4 @@ class DBTableTest(DBTestCase):
         f1.rowlock()
 
         with self.assertRaises(PgOperationalError):
-            execute(self.db_mgr.getconn("conn2"), "select * from bar for update nowait")
+            execute(self.db_mgr.name("conn2"), "select * from bar for update nowait")
