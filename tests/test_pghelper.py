@@ -11,7 +11,7 @@ class PgHelperTest(TestCase):
         'port'           : 5432,
         'user'           : 'wizzat',
         'password'       : 'wizzat',
-        'database'       : 'wizzat_testdb',
+        'database'       : 'wizzatpy_testdb',
         'cursor_factory' : psycopg2.extras.DictCursor,
     }
 

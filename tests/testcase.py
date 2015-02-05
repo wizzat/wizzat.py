@@ -8,7 +8,7 @@ class DBTestCase(wizzat.testutil.TestCase):
     db_info = {
         'host'       : 'localhost',
         'port'       : 5432,
-        'user'       : 'wizzatpy',
+        'user'       : 'wizzat',
         'password'   : 'wizzat',
         'database'   : 'wizzatpy_testdb',
         'autocommit' : False,
