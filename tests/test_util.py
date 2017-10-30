@@ -41,16 +41,16 @@ class TestUtil(TestCase):
     def test_update_env(self):
         self.assertTrue('ABRA' not in os.environ)
         self.assertTrue('CAD' not in os.environ)
-        self.assertTrue('PWD' in os.environ)
+        self.assertTrue('PATH' in os.environ)
 
-        with update_env(ABRA = 'abc', CAD = 'def', PWD='bar'):
+        with update_env(ABRA = 'abc', CAD = 'def', PATH='bar'):
             self.assertEqual(os.environ['ABRA'], 'abc')
             self.assertEqual(os.environ['CAD'], 'def')
-            self.assertEqual(os.environ['PWD'], 'bar')
+            self.assertEqual(os.environ['PATH'], 'bar')
 
         self.assertTrue('ABRA' not in os.environ)
         self.assertTrue('CAD' not in os.environ)
-        self.assertNotEqual(os.environ['PWD'], 'bar')
+        self.assertNotEqual(os.environ['PATH'], 'bar')
 
     def test_tmpdir(self):
         with tmpdir() as d:
